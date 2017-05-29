@@ -22,13 +22,13 @@
  * @APPLE_LICENSE_HEADER_END@
  *
  */
- /*
-	 File:       OSQueue.h
+/*
+    File:       OSQueue.h
 
-	 Contains:   implements OSQueue class
+    Contains:   implements OSQueue class
 
 
- */
+*/
 
 #ifndef _OSQUEUE_H_
 #define _OSQUEUE_H_
@@ -45,109 +45,131 @@ class OSQueue;
 
 class OSQueueElem {
 public:
-	OSQueueElem(void* enclosingObject = nullptr) : fNext(nullptr), fPrev(nullptr), fQueue(nullptr),
-		fEnclosingObject(enclosingObject) {}
-	virtual ~OSQueueElem() { Assert(fQueue == nullptr); }
+    OSQueueElem(void *enclosingObject = nullptr) : fNext(nullptr), fPrev(nullptr), fQueue(nullptr),
+                                                   fEnclosingObject(enclosingObject) {}
 
-	bool IsMember(const OSQueue& queue) { return (&queue == fQueue); }
-	bool IsMemberOfAnyQueue() { return fQueue != nullptr; }
-	void* GetEnclosingObject() { return fEnclosingObject; }
-	void SetEnclosingObject(void* obj) { fEnclosingObject = obj; }
+    virtual ~OSQueueElem() {Assert(fQueue == nullptr); }
 
-	OSQueueElem* Next() { return fNext; }
-	OSQueueElem* Prev() { return fPrev; }
-	OSQueue* InQueue() { return fQueue; }
-	inline void Remove();
+    bool IsMember(const OSQueue &queue) { return (&queue == fQueue); }
+
+    bool IsMemberOfAnyQueue() { return fQueue != nullptr; }
+
+    void *GetEnclosingObject() { return fEnclosingObject; }
+
+    void SetEnclosingObject(void *obj) { fEnclosingObject = obj; }
+
+    OSQueueElem *Next() { return fNext; }
+
+    OSQueueElem *Prev() { return fPrev; }
+
+    OSQueue *InQueue() { return fQueue; }
+
+    inline void Remove();
 
 private:
 
-	OSQueueElem*    fNext;
-	OSQueueElem*    fPrev;
-	OSQueue *       fQueue;
-	void*           fEnclosingObject;
+    OSQueueElem *fNext;
+    OSQueueElem *fPrev;
+    OSQueue *fQueue;
+    void *fEnclosingObject;
 
-	friend class    OSQueue;
+    friend class OSQueue;
 };
 
 class OSQueue {
 public:
-	OSQueue();
-	~OSQueue() {}
+    OSQueue();
 
-	void            EnQueue(OSQueueElem* object);
-	OSQueueElem*    DeQueue();
+    ~OSQueue() {}
 
-	OSQueueElem*    GetHead() { if (fLength > 0) return fSentinel.fPrev; return nullptr; }
-	OSQueueElem*    GetTail() { if (fLength > 0) return fSentinel.fNext; return nullptr; }
-	UInt32          GetLength() { return fLength; }
+    void EnQueue(OSQueueElem *object);
 
-	void            Remove(OSQueueElem* object);
+    OSQueueElem *DeQueue();
+
+    OSQueueElem *GetHead()
+    {
+        if (fLength > 0) return fSentinel.fPrev;
+        return nullptr;
+    }
+
+    OSQueueElem *GetTail()
+    {
+        if (fLength > 0) return fSentinel.fNext;
+        return nullptr;
+    }
+
+    UInt32 GetLength() { return fLength; }
+
+    void Remove(OSQueueElem *object);
 
 #if OSQUEUETESTING
-	static bool       Test();
+    static bool       Test();
 #endif
 
 protected:
-	OSMutex 			fMutex;
+    OSMutex fMutex;
 
-	OSQueueElem     fSentinel;
-	UInt32          fLength;
+    OSQueueElem fSentinel;
+    UInt32 fLength;
 };
 
-class OSQueueIter
-{
+class OSQueueIter {
 public:
-	OSQueueIter(OSQueue* inQueue) : fQueueP(inQueue), fCurrentElemP(inQueue->GetHead()) {}
-	OSQueueIter(OSQueue* inQueue, OSQueueElem* startElemP) : fQueueP(inQueue)
-	{
-		if (startElemP)
-		{
-			Assert(startElemP->IsMember(*inQueue));
-			fCurrentElemP = startElemP;
+    OSQueueIter(OSQueue *inQueue) : fQueueP(inQueue), fCurrentElemP(inQueue->GetHead()) {}
 
-		}
-		else
-			fCurrentElemP = nullptr;
-	}
-	~OSQueueIter() {}
+    OSQueueIter(OSQueue *inQueue, OSQueueElem *startElemP) : fQueueP(inQueue)
+    {
+        if (startElemP) {
+            Assert(startElemP->IsMember(*inQueue));
+            fCurrentElemP = startElemP;
 
-	void            Reset() { fCurrentElemP = fQueueP->GetHead(); }
+        } else
+            fCurrentElemP = nullptr;
+    }
 
-	OSQueueElem*    GetCurrent() { return fCurrentElemP; }
-	void            Next();
+    ~OSQueueIter() {}
 
-	bool          IsDone() { return fCurrentElemP == nullptr; }
+    void Reset() { fCurrentElemP = fQueueP->GetHead(); }
+
+    OSQueueElem *GetCurrent() { return fCurrentElemP; }
+
+    void Next();
+
+    bool IsDone() { return fCurrentElemP == nullptr; }
 
 private:
 
-	OSQueue*        fQueueP;
-	OSQueueElem*    fCurrentElemP;
+    OSQueue *fQueueP;
+    OSQueueElem *fCurrentElemP;
 };
 
-class OSQueue_Blocking
-{
+class OSQueue_Blocking {
 public:
-	OSQueue_Blocking() {}
-	~OSQueue_Blocking() {}
+    OSQueue_Blocking() {}
 
-	OSQueueElem*    DeQueueBlocking(OSThread* inCurThread, SInt32 inTimeoutInMilSecs);
-	OSQueueElem*    DeQueue();//will not block
-	void            EnQueue(OSQueueElem* obj);
+    ~OSQueue_Blocking() {}
 
-	OSCond*         GetCond() { return &fCond; }
-	OSQueue*        GetQueue() { return &fQueue; }
+    OSQueueElem *DeQueueBlocking(OSThread *inCurThread, SInt32 inTimeoutInMilSecs);
+
+    OSQueueElem *DeQueue();//will not block
+    void EnQueue(OSQueueElem *obj);
+
+    OSCond *GetCond() { return &fCond; }
+
+    OSQueue *GetQueue() { return &fQueue; }
 
 private:
 
-	OSCond              fCond;
-	OSMutex             fMutex;
-	OSQueue             fQueue;
+    OSCond fCond;
+    OSMutex fMutex;
+    OSQueue fQueue;
 };
 
 
 void OSQueueElem::Remove()
 {
-	if (fQueue != nullptr)
-		fQueue->Remove(this);
+    if (fQueue != nullptr)
+        fQueue->Remove(this);
 }
+
 #endif //_OSQUEUE_H_

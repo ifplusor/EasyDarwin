@@ -40,6 +40,7 @@ _ReSharper*/
 *libEasyHLS/
 *EasyNVR/
 *.m3u8
+/build/
 /EasyDarwin/build/
 /EasyDarwin/dist/
 /CommonUtilitiesLib/build/
@@ -55,6 +56,7 @@ Movies*/
 *.opensdf
 /EasyCamera/build/
 /EasyRedisClient/build/
-*.doc
 *.VC.db
 *.VC.opendb
+.idea/
+cmake-build-debug/

@@ -22,19 +22,19 @@
  * @APPLE_LICENSE_HEADER_END@
  *
  */
- /*
-	 File:       TimeoutTask.h
+/*
+    File:       TimeoutTask.h
 
-	 Contains:   Just like a normal task, but can be scheduled for timeouts. Unlike
-				 IdleTask, which is VERY aggressive about being on time, but high
-				 overhead for maintaining the timing information, this is a low overhead,
-				 low priority timing mechanism. Timeouts may not happen exactly when
-				 they are supposed to, but who cares?
-
-
+    Contains:   Just like a normal task, but can be scheduled for timeouts. Unlike
+                IdleTask, which is VERY aggressive about being on time, but high
+                overhead for maintaining the timing information, this is a low overhead,
+                low priority timing mechanism. Timeouts may not happen exactly when
+                they are supposed to, but who cares?
 
 
- */
+
+
+*/
 
 #ifndef __TIMEOUTTASK_H__
 #define __TIMEOUTTASK_H__
@@ -52,66 +52,76 @@
 
 #define TIMEOUT_DEBUGGING 0 //messages to help debugging timeouts
 
-class TimeoutTaskThread : public IdleTask
-{
+// TimeoutTaskThread 是 IdleTask 的派生类,IdleTask 是 Task 的派生类。
+// 实际上这个类的名字容易产生混淆,它并不是一个线程类,而是一个基于 Task类的任务类,它配合
+// TimeoutTask类实现一个周期性运行的基础任务。
+class TimeoutTaskThread : public IdleTask {
 public:
 
-	//All timeout tasks get timed out from this thread
-	TimeoutTaskThread() : IdleTask(), fMutex() { this->SetTaskName("TimeoutTask"); }
-	virtual     ~TimeoutTaskThread() {}
+    //All timeout tasks get timed out from this thread
+    TimeoutTaskThread() : IdleTask(), fMutex() { this->SetTaskName("TimeoutTask"); }
+
+    virtual     ~TimeoutTaskThread() {}
 
 private:
 
-	//this thread runs every minute and checks for timeouts
-	enum
-	{
-		kIntervalSeconds = 15   //UInt32
-	};
+    //this thread runs every minute and checks for timeouts
+    enum {
+        kIntervalSeconds = 15   //UInt32
+    };
 
-	virtual SInt64          Run();
-	OSMutex                 fMutex;
-	OSQueue                 fQueue;
+    virtual SInt64 Run();
 
-	friend class TimeoutTask;
+    OSMutex fMutex;
+    OSQueue fQueue;
+
+    friend class TimeoutTask;
 };
 
-class TimeoutTask
-{
-	//TimeoutTask is not a derived object off of Task, to add flexibility as
-	//to how this object can be utilitized
+class TimeoutTask {
+    //TimeoutTask is not a derived object off of Task, to add flexibility as
+    //to how this object can be utilitized
 
 public:
 
-	//Call Initialize before using this class
-	static  void Initialize();
-	//Pass in the task you'd like to send timeouts to. 
-	//Also pass in the timeout you'd like to use. By default, the timeout is 0 (NEVER).
-	TimeoutTask(Task* inTask, SInt64 inTimeoutInMilSecs = 15);
-	~TimeoutTask();
+    //Call Initialize before using this class
+    static void Initialize();
 
-	//MODIFIERS
+    //Pass in the task you'd like to send timeouts to.
+    //Also pass in the timeout you'd like to use. By default, the timeout is 0 (NEVER).
+    TimeoutTask(Task *inTask, SInt64 inTimeoutInMilSecs = 15);
 
-	// Changes the timeout time, also refreshes the timeout
-	void        SetTimeout(SInt64 inTimeoutInMilSecs);
+    ~TimeoutTask();
 
-	// Specified task will get a Task::kTimeoutEvent if this
-	// function isn't called within the timeout period
-	void        RefreshTimeout() { fTimeoutAtThisTime = OS::Milliseconds() + fTimeoutInMilSecs; Assert(fTimeoutAtThisTime > 0); }
+    //MODIFIERS
 
-	void        SetTask(Task* inTask) { fTask = inTask; }
+    // Changes the timeout time, also refreshes the timeout
+    void SetTimeout(SInt64 inTimeoutInMilSecs);
+
+    // Specified task will get a Task::kTimeoutEvent if this
+    // function isn't called within the timeout period
+    void RefreshTimeout()
+    {
+        fTimeoutAtThisTime = OS::Milliseconds() + fTimeoutInMilSecs;
+        Assert(fTimeoutAtThisTime > 0);
+    }
+
+    void SetTask(Task *inTask) { fTask = inTask; }
+
 private:
 
-	Task*       fTask;
-	SInt64      fTimeoutAtThisTime;
-	SInt64      fTimeoutInMilSecs;
-	//for putting on our global queue of timeout tasks
-	OSQueueElem fQueueElem;
+    Task *fTask;
+    SInt64 fTimeoutAtThisTime;
+    SInt64 fTimeoutInMilSecs;
+    //for putting on our global queue of timeout tasks
+    OSQueueElem fQueueElem;
 
-	//static TimeoutTaskThread*   sThread;
+    //static TimeoutTaskThread*   sThread;
 
-	static shared_ptr<TimeoutTaskThread> sThread;
+    static shared_ptr<TimeoutTaskThread> sThread;
 
-	friend class TimeoutTaskThread;
+    friend class TimeoutTaskThread;
 };
+
 #endif //__TIMEOUTTASK_H__
 

@@ -135,6 +135,8 @@ QTSSAttrInfoDict::AttrInfo  QTSServerInterface::sAttributes[] =
 
 void    QTSServerInterface::Initialize()
 {
+	// 调用 kServerDictIndex、kQTSSConnectedUserDictIndex 两个 dict map 的 SetAttribute 函数,
+	// 根据 sAttributes、sConnectedUserAttributes 进行属性信息统计。
 	for (UInt32 x = 0; x < qtssSvrNumParams; x++)
 		QTSSDictionaryMap::GetMap(QTSSDictionaryMap::kServerDictIndex)->
 		SetAttribute(x, sAttributes[x].fAttrName, sAttributes[x].fFuncPtr,
@@ -216,12 +218,17 @@ QTSServerInterface::QTSServerInterface()
 	fNumThinned(0),
 	fNumThreads(0)
 {
+	// 初始化 sModuleArray 数组、sNumModulesInRole 数组。
 	for (UInt32 y = 0; y < QTSSModule::kNumRoles; y++)
 	{
 		sModuleArray[y] = NULL;
 		sNumModulesInRole[y] = 0;
 	}
 
+	// 注意:在构建函数的初始化部分,传给 QTSSDictionary 构建函数的是 kServerDictIndex
+	// 对应的 dict map。
+	// 调用基类 QTSSDictionary 的 SetVal 函数记录每个属性的数据来源和长度等信息。
+	// 注意和 QTSServerInterface::Initialize 函数里调用 SetAttribute 的不同。
 	this->SetVal(qtssSvrState, &fServerState, sizeof(fServerState));
 	this->SetVal(qtssServerAPIVersion, &sServerAPIVersion, sizeof(sServerAPIVersion));
 	this->SetVal(qtssSvrDefaultIPAddr, &fDefaultIPAddr, sizeof(fDefaultIPAddr));
@@ -283,6 +290,7 @@ void QTSServerInterface::KillAllRTPSessions()
 	}
 }
 
+// 处理设置 qtssSvrState 属性的情况。
 void QTSServerInterface::SetValueComplete(UInt32 inAttrIndex, QTSSDictionaryMap* inMap,
 	UInt32 inValueIndex, void* inNewValue, UInt32 inNewValueLen)
 {

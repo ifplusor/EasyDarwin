@@ -72,6 +72,7 @@ Socket::Socket(Task *notifytask, UInt32 inSocketType)
 	fDestAddr.sin_addr.s_addr = 0;
 	fDestAddr.sin_port = 0;
 
+	// SetTask 是 EventContext 的成员函数,执行”fTask = notifytask”操作。
 	this->SetTask(notifytask);
 
 #if SOCKET_DEBUG

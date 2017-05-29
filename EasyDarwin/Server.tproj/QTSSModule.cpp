@@ -315,6 +315,8 @@ QTSS_Error  QTSSModule::AddRole(QTSS_Role inRole)
 		}
 	*/
 
+	// QTSS_RTSPRequest_Role、QTSS_OpenFile_Role、QTSS_RTSPAuthenticate_Role,
+	// 特别地用一些全局量做标记。
 	if (inRole == QTSS_RTSPRequest_Role)
 		sHasRTSPRequestModule = true;
 	if (inRole == QTSS_OpenFile_Role)

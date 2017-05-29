@@ -158,6 +158,7 @@ QTSS_Error ReflectorSession::SetupReflectorSession(SourceInfo* inInfo, QTSS_Stan
 		delete fStreamArray; // keep the array list synchronized with the source info.
 	}
 
+	// 音视频分为两个流,对于每个流,创建 ReflectorStream 对象。
 	fStreamArray = new ReflectorStream*[fSourceInfo->GetNumStreams()];
 	::memset(fStreamArray, 0, fSourceInfo->GetNumStreams() * sizeof(ReflectorStream*));
 
@@ -216,6 +217,7 @@ void    ReflectorSession::AddOutput(ReflectorOutput* inOutput, bool isClient)
 
 	while (true)
 	{
+		// 针对每一个 ReflectorStream 调用 AddOutput 添加 inOutput
 		UInt32 x = 0;
 		for (; x < fSourceInfo->GetNumStreams(); x++)
 		{
@@ -334,7 +336,7 @@ void ReflectorSession::DelRedisLive()
 	UInt32 numModules = QTSServerInterface::GetNumModulesInRole(QTSSModule::kRedisUpdateStreamInfoRole);
 	for (UInt32 currentModule = 0; currentModule < numModules; currentModule++)
 	{
-		qtss_printf("��redis��ɾ����������%s\n", fSourceID.Ptr);
+		qtss_printf("从redis中删除推流名称%s\n", fSourceID.Ptr);
 		QTSSModule* theModule = QTSServerInterface::GetModule(QTSSModule::kRedisUpdateStreamInfoRole, currentModule);
 		(void)theModule->CallDispatch(Easy_RedisUpdateStreamInfo_Role, &theParams);
 	}

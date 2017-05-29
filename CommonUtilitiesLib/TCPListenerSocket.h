@@ -63,7 +63,7 @@ public:
 
 	void        SlowDown() { fSleepBetweenAccepts = true; }
 	void        RunNormal() { fSleepBetweenAccepts = false; }
-	//derived object must implement a way of getting tasks & sockets to this object 
+	//derived object must implement a way of getting tasks & sockets to this object
 	virtual Task*   GetSessionTask(TCPSocket** outSocket) = 0;
 
 	virtual SInt64  Run();

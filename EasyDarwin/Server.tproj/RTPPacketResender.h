@@ -22,16 +22,16 @@
  * @APPLE_LICENSE_HEADER_END@
  *
  */
- /*
-	 File:       RTPPacketResender.h
+/*
+    File:       RTPPacketResender.h
 
-	 Contains:   RTPPacketResender class to buffer and track re-transmits of RTP packets.
+    Contains:   RTPPacketResender class to buffer and track re-transmits of RTP packets.
 
-	 the ctor copies the packet data, sets a timer for the packet's age limit and
-	 another timer for it's possible re-transmission.
-	 A duration timer is started to measure the RTT based on the client's ack.
+    the ctor copies the packet data, sets a timer for the packet's age limit and
+    another timer for it's possible re-transmission.
+    A duration timer is started to measure the RTT based on the client's ack.
 
- */
+*/
 
 #ifndef __RTP_PACKET_RESENDER_H__
 #define __RTP_PACKET_RESENDER_H__
@@ -47,122 +47,132 @@
 
 class MyAckListLog;
 
-class RTPResenderEntry
-{
+class RTPResenderEntry {
 public:
 
-	void*               fPacketData;
-	UInt32              fPacketSize;
-	bool              fIsSpecialBuffer;
-	SInt64              fExpireTime;
-	SInt64              fAddedTime;
-	SInt64              fOrigRetransTimeout;
-	UInt32              fNumResends;
-	UInt16              fSeqNum;
+    void *fPacketData;
+    UInt32 fPacketSize;
+    bool fIsSpecialBuffer;
+    SInt64 fExpireTime;
+    SInt64 fAddedTime;
+    SInt64 fOrigRetransTimeout;
+    UInt32 fNumResends;
+    UInt16 fSeqNum;
 #if RTP_PACKET_RESENDER_DEBUGGING
-	UInt32              fPacketArraySizeWhenAdded;
+    UInt32              fPacketArraySizeWhenAdded;
 #endif
 };
 
 
-class RTPPacketResender
-{
+class RTPPacketResender {
 public:
 
-	RTPPacketResender();
-	~RTPPacketResender();
+    RTPPacketResender();
 
-	//
-	// These must be called before using the object
-	void                SetDestination(UDPSocket* inOutputSocket, UInt32 inDestAddr, UInt16 inDestPort);
-	void                SetBandwidthTracker(RTPBandwidthTracker* inTracker) { fBandwidthTracker = inTracker; }
+    ~RTPPacketResender();
 
-	//
-	// AddPacket adds a new packet to the resend queue. This will not send the packet.
-	// AddPacket itself is not thread safe.
-	void                AddPacket(void * rtpPacket, UInt32 packetSize, SInt32 ageLimitInMsec);
+    //
+    // These must be called before using the object
+    void SetDestination(UDPSocket *inOutputSocket, UInt32 inDestAddr, UInt16 inDestPort);
 
-	//
-	// Acks a packet. Also not thread safe.
-	void                AckPacket(UInt16 sequenceNumber, SInt64& inCurTimeInMsec);
+    void SetBandwidthTracker(RTPBandwidthTracker *inTracker) { fBandwidthTracker = inTracker; }
 
-	//
-	// Resends outstanding packets in the queue. Guess what. Not thread safe.
-	void                ResendDueEntries();
+    //
+    // AddPacket adds a new packet to the resend queue. This will not send the packet.
+    // AddPacket itself is not thread safe.
+    void AddPacket(void *rtpPacket, UInt32 packetSize, SInt32 ageLimitInMsec);
 
-	//
-	// Clear outstanding packets - if we no longer care about any of the
-	// outstanding, unacked packets
-	void                ClearOutstandingPackets();
+    //
+    // Acks a packet. Also not thread safe.
+    void AckPacket(UInt16 sequenceNumber, SInt64 &inCurTimeInMsec);
 
-	//
-	// ACCESSORS
-	bool              IsFlowControlled() { return fBandwidthTracker->IsFlowControlled(); }
-	SInt32              GetMaxPacketsInList() { return fMaxPacketsInList; }
-	SInt32              GetNumPacketsInList() { return fPacketsInList; }
-	SInt32              GetNumResends() { return fNumResends; }
+    //
+    // Resends outstanding packets in the queue. Guess what. Not thread safe.
+    void ResendDueEntries();
 
-	static UInt32       GetNumRetransmitBuffers() { return sBufferPool.GetTotalNumBuffers(); }
-	static UInt32       GetWastedBufferBytes() { return sNumWastedBytes; }
+    //
+    // Clear outstanding packets - if we no longer care about any of the
+    // outstanding, unacked packets
+    void ClearOutstandingPackets();
+
+    //
+    // ACCESSORS
+    bool IsFlowControlled() { return fBandwidthTracker->IsFlowControlled(); }
+
+    SInt32 GetMaxPacketsInList() { return fMaxPacketsInList; }
+
+    SInt32 GetNumPacketsInList() { return fPacketsInList; }
+
+    SInt32 GetNumResends() { return fNumResends; }
+
+    static UInt32 GetNumRetransmitBuffers() { return sBufferPool.GetTotalNumBuffers(); }
+
+    static UInt32 GetWastedBufferBytes() { return sNumWastedBytes; }
 
 #if RTP_PACKET_RESENDER_DEBUGGING
-	void                SetDebugInfo(UInt32 trackID, UInt16 remoteRTCPPort, UInt32 curPacketDelay);
-	void                SetLog(StrPtrLen *logname);
-	UInt32              SpillGuts(UInt32 inBytesSentThisInterval);
-	void                LogClose(SInt64 inTimeSpentInFlowControl);
-	void                logprintf(const char * format, ...);
+    void                SetDebugInfo(UInt32 trackID, UInt16 remoteRTCPPort, UInt32 curPacketDelay);
+    void                SetLog(StrPtrLen *logname);
+    UInt32              SpillGuts(UInt32 inBytesSentThisInterval);
+    void                LogClose(SInt64 inTimeSpentInFlowControl);
+    void                logprintf(const char * format, ...);
 
 #else
-	void                SetLog(StrPtrLen * /*logname*/) {}
+
+    void SetLog(StrPtrLen * /*logname*/) {}
+
 #endif
 
 private:
 
-	// Tracking the capacity of the network
-	RTPBandwidthTracker* fBandwidthTracker;
+    // Tracking the capacity of the network
+    RTPBandwidthTracker *fBandwidthTracker;
 
-	// Who to send to
-	UDPSocket*          fSocket;
-	UInt32              fDestAddr;
-	UInt16              fDestPort;
+    // Who to send to
+    UDPSocket *fSocket;
+    UInt32 fDestAddr;
+    UInt16 fDestPort;
 
-	UInt32              fMaxPacketsInList;
-	UInt32              fPacketsInList;
-	UInt32              fNumResends;                // how many total retransmitted packets
-	UInt32              fNumExpired;                // how many total packets dropped
-	UInt32              fNumAcksForMissingPackets;  // how many acks received in the case where the packet was not in the list
-	UInt32              fNumSent;                   // how many packets sent
+    UInt32 fMaxPacketsInList;
+    UInt32 fPacketsInList;
+    UInt32 fNumResends;                // how many total retransmitted packets
+    UInt32 fNumExpired;                // how many total packets dropped
+    UInt32 fNumAcksForMissingPackets;  // how many acks received in the case where the packet was not in the list
+    UInt32 fNumSent;                   // how many packets sent
 
 #if RTP_PACKET_RESENDER_DEBUGGING
-	MyAckListLog        *fLogger;
+    MyAckListLog        *fLogger;
 
-	UInt32              fTrackID;
-	UInt16              fRemoteRTCPPort;
-	UInt32              fCurrentPacketDelay;
-	DssDurationTimer    fInfoDisplayTimer;
+    UInt32              fTrackID;
+    UInt16              fRemoteRTCPPort;
+    UInt32              fCurrentPacketDelay;
+    DssDurationTimer    fInfoDisplayTimer;
 #endif
 
-	RTPResenderEntry*   fPacketArray;
-	UInt16              fStartSeqNum;
-	UInt32              fPacketArraySize;
-	UInt32              fPacketArrayMask;
-	UInt16              fHighestSeqNum;
-	UInt32              fLastUsed;
-	OSMutex             fPacketQMutex;
+    RTPResenderEntry *fPacketArray;
+    UInt16 fStartSeqNum;
+    UInt32 fPacketArraySize;
+    UInt32 fPacketArrayMask;
+    UInt16 fHighestSeqNum;
+    UInt32 fLastUsed;
+    OSMutex fPacketQMutex;
 
-	RTPResenderEntry*   GetEntryByIndex(UInt16 inIndex);
-	RTPResenderEntry*   GetEntryBySeqNum(UInt16 inSeqNum);
+    RTPResenderEntry *GetEntryByIndex(UInt16 inIndex);
 
-	RTPResenderEntry*   GetEmptyEntry(UInt16 inSeqNum, UInt32 inPacketSize);
-	void ReallocatePacketArray();
-	void RemovePacket(UInt32 packetIndex, bool reuse = true);
-	void RemovePacket(RTPResenderEntry* inEntry);
+    RTPResenderEntry *GetEntryBySeqNum(UInt16 inSeqNum);
 
-	static OSBufferPool sBufferPool;
-	//static unsigned int sNumWastedBytes;
-	static std::atomic_uint sNumWastedBytes;
+    RTPResenderEntry *GetEmptyEntry(UInt16 inSeqNum, UInt32 inPacketSize);
 
-	void            UpdateCongestionWindow(SInt32 bytesToOpenBy);
+    void ReallocatePacketArray();
+
+    void RemovePacket(UInt32 packetIndex, bool reuse = true);
+
+    void RemovePacket(RTPResenderEntry *inEntry);
+
+    static OSBufferPool sBufferPool;
+    //static unsigned int sNumWastedBytes;
+    static std::atomic_uint sNumWastedBytes;
+
+    void UpdateCongestionWindow(SInt32 bytesToOpenBy);
 };
 
 #endif //__RTP_PACKET_RESENDER_H__

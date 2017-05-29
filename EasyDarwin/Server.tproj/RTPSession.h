@@ -22,24 +22,24 @@
  * @APPLE_LICENSE_HEADER_END@
  *
  */
- /*
-	 File:       RTPSession.h
+/*
+    File:       RTPSession.h
 
-	 Contains:   RTPSession represents an, well, an RTP session. The server creates
-				 one of these when a new client connects, and it lives for the duration
-				 of an RTP presentation. It contains all the resources associated with
-				 that presentation, such as RTPStream objects. It also provides an
-				 API for manipulating a session (playing it, pausing it, stopping it, etc)
+    Contains:   RTPSession represents an, well, an RTP session. The server creates
+                one of these when a new client connects, and it lives for the duration
+                of an RTP presentation. It contains all the resources associated with
+                that presentation, such as RTPStream objects. It also provides an
+                API for manipulating a session (playing it, pausing it, stopping it, etc)
 
-				 It is also the active element, ie. it is the object that gets scheduled
-				 to send out & receive RTP & RTCP packets
+                It is also the active element, ie. it is the object that gets scheduled
+                to send out & receive RTP & RTCP packets
 
-	 Change History (most recent first):
-
-
+    Change History (most recent first):
 
 
- */
+
+
+*/
 
 
 #ifndef _RTPSESSION_H_
@@ -51,117 +51,122 @@
 #include "QTSSModule.h"
 
 
-class RTPSession : public RTPSessionInterface
-{
+class RTPSession : public RTPSessionInterface {
 public:
 
-	RTPSession();
-	virtual ~RTPSession();
+    RTPSession();
 
-	//
-	//ACCESS FUNCTIONS
+    virtual ~RTPSession();
 
-	QTSSModule* GetPacketSendingModule() { return fModule; }
-	bool      HasAnRTPStream() { return fHasAnRTPStream; }
+    //
+    //ACCESS FUNCTIONS
 
-	RTPStream*  FindRTPStreamForChannelNum(UInt8 inChannelNum);
+    QTSSModule *GetPacketSendingModule() { return fModule; }
 
-	//
-	// MODIFIERS
+    bool HasAnRTPStream() { return fHasAnRTPStream; }
 
-	//This puts this session into the session map (called by the server! not the module!)
-	//If this function fails (it can return QTSS_DupName), it means that there is already
-	//a session with this session ID in the map.
-	QTSS_Error  Activate(const StrPtrLen& inSessionID);
+    RTPStream *FindRTPStreamForChannelNum(UInt8 inChannelNum);
 
-	// The way this object is implemented currently, only one module can send the
-	// packets for a session.
-	void        SetPacketSendingModule(QTSSModule* inModule) { fModule = inModule; }
+    //
+    // MODIFIERS
 
-	//Once the session is bound, a module can add streams to it.
-	//It must pass in a trackID that uniquely identifies this stream.
-	//This call can only be made during an RTSP Setup request, and the
-	//RTSPRequestInterface must be provided.
-	//You may also opt to attach a codec name and type to this stream.
-	QTSS_Error  AddStream(RTSPRequestInterface* request, RTPStream** outStream,
-		QTSS_AddStreamFlags inFlags);
+    //This puts this session into the session map (called by the server! not the module!)
+    //If this function fails (it can return QTSS_DupName), it means that there is already
+    //a session with this session ID in the map.
+    QTSS_Error Activate(const StrPtrLen &inSessionID);
 
-	//Reset the thinning params for all streams using the late tolerance value
-	void SetStreamThinningParams(Float32 inLateTolerance);
+    // The way this object is implemented currently, only one module can send the
+    // packets for a session.
+    void SetPacketSendingModule(QTSSModule *inModule) { fModule = inModule; }
 
-	//Begins playing all streams. Currently must be associated with an RTSP Play
-	//request, and the request interface must be provided.
-	QTSS_Error  Play(RTSPRequestInterface* request, QTSS_PlayFlags inFlags);
+    //Once the session is bound, a module can add streams to it.
+    //It must pass in a trackID that uniquely identifies this stream.
+    //This call can only be made during an RTSP Setup request, and the
+    //RTSPRequestInterface must be provided.
+    //You may also opt to attach a codec name and type to this stream.
+    QTSS_Error AddStream(RTSPRequestInterface *request, RTPStream **outStream,
+                         QTSS_AddStreamFlags inFlags);
 
-	//Pauses all streams.
-	void            Pause();
+    //Reset the thinning params for all streams using the late tolerance value
+    void SetStreamThinningParams(Float32 inLateTolerance);
 
-	// Tears down the session. This will cause QTSS_SessionClosing_Role to run
-	void            Teardown();
+    //Begins playing all streams. Currently must be associated with an RTSP Play
+    //request, and the request interface must be provided.
+    QTSS_Error Play(RTSPRequestInterface *request, QTSS_PlayFlags inFlags);
 
-	//Utility functions. Modules aren't required to use these, but can be useful
-	void            SendDescribeResponse(RTSPRequestInterface* request);
-	void            SendAnnounceResponse(RTSPRequestInterface* request);
-	void            SendPlayResponse(RTSPRequestInterface* request, UInt32 inFlags);
-	void            SendPauseResponse(RTSPRequestInterface* request)
-	{
-		request->SendHeader();
-	}
-	void            SendTeardownResponse(RTSPRequestInterface* request)
-	{
-		request->SetKeepAlive(false); request->SendHeader();
-	}
+    //Pauses all streams.
+    void Pause();
 
-	SInt32          GetQualityLevel();
-	void            SetQualityLevel(SInt32 level);
+    // Tears down the session. This will cause QTSS_SessionClosing_Role to run
+    void Teardown();
+
+    //Utility functions. Modules aren't required to use these, but can be useful
+    void SendDescribeResponse(RTSPRequestInterface *request);
+
+    void SendAnnounceResponse(RTSPRequestInterface *request);
+
+    void SendPlayResponse(RTSPRequestInterface *request, UInt32 inFlags);
+
+    void SendPauseResponse(RTSPRequestInterface *request)
+    {
+        request->SendHeader();
+    }
+
+    void SendTeardownResponse(RTSPRequestInterface *request)
+    {
+        request->SetKeepAlive(false);
+        request->SendHeader();
+    }
+
+    SInt32 GetQualityLevel();
+
+    void SetQualityLevel(SInt32 level);
 
 private:
 
-	//where timeouts, deletion conditions get processed
-	virtual SInt64  Run();
+    //where timeouts, deletion conditions get processed
+    virtual SInt64 Run();
 
-	// Utility function used by Play
-	UInt32 PowerOf2Floor(UInt32 inNumToFloor);
+    // Utility function used by Play
+    UInt32 PowerOf2Floor(UInt32 inNumToFloor);
 
-	//overbuffer logging function
-	void LogOverbufferStats();
+    //overbuffer logging function
+    void LogOverbufferStats();
 
-	enum
-	{
-		kRTPStreamArraySize = 20,
-		kCantGetMutexIdleTime = 10
-	};
+    enum {
+        kRTPStreamArraySize = 20,
+        kCantGetMutexIdleTime = 10
+    };
 
-	QTSSModule*         fModule;
-	bool              fHasAnRTPStream;
-	SInt32              fSessionQualityLevel;
+    QTSSModule *fModule;
+    bool fHasAnRTPStream;
+    SInt32 fSessionQualityLevel;
 
-	char        fRTPStreamArray[kRTPStreamArraySize];
+    char fRTPStreamArray[kRTPStreamArraySize];
 
-	// Module invocation and module state.
-	// This info keeps track of our current state so that
-	// the state machine works properly.
-	enum
-	{
-		kStart = 0,
-		kSendingPackets = 1
-	};
+    // Module invocation and module state.
+    // This info keeps track of our current state so that
+    // the state machine works properly.
+    enum {
+        kStart = 0,
+        kSendingPackets = 1
+    };
 
-	UInt32 fCurrentModuleIndex;
-	UInt32 fCurrentState;
+    UInt32 fCurrentModuleIndex;
+    UInt32 fCurrentState;
 
-	QTSS_ModuleState    fModuleState;
-	QTSS_CliSesClosingReason fClosingReason;
+    QTSS_ModuleState fModuleState;
+    QTSS_CliSesClosingReason fClosingReason;
 
-	UInt32              fCurrentModule;
-	// This is here to give the ability to the ClientSessionClosing role to
-	// do asynchronous I/O
-	bool              fModuleDoingAsyncStuff;
+    UInt32 fCurrentModule;
+    // This is here to give the ability to the ClientSessionClosing role to
+    // do asynchronous I/O
+    bool fModuleDoingAsyncStuff;
 
 #if DEBUG
-	bool fActivateCalled;
+    bool fActivateCalled;
 #endif
-	SInt64              fLastBandwidthTrackerStatsUpdate;
+    SInt64 fLastBandwidthTrackerStatsUpdate;
 
 };
 

@@ -22,14 +22,14 @@
  * @APPLE_LICENSE_HEADER_END@
  *
  */
- /*
-	 File:       OSMutexRW.h
+/*
+    File:       OSMutexRW.h
 
-	 Contains:
+    Contains:
 
 
 
- */
+*/
 
 #ifndef _OSMUTEXRW_H_
 #define _OSMUTEXRW_H_
@@ -44,92 +44,121 @@
 
 #define DEBUGMUTEXRW 0
 
-class OSMutexRW
-{
+class OSMutexRW {
 public:
 
-	OSMutexRW() : fState(0), fWriteWaiters(0), fReadWaiters(0), fActiveReaders(0) {};
+    OSMutexRW() : fState(0), fWriteWaiters(0), fReadWaiters(0), fActiveReaders(0) {};
 
-	void LockRead();
-	void LockWrite();
-	void Unlock();
+    void LockRead();
 
-	// Returns 0 on success, EBUSY on failure
-	int TryLockWrite();
-	int TryLockRead();
+    void LockWrite();
+
+    void Unlock();
+
+    // Returns 0 on success, EBUSY on failure
+    int TryLockWrite();
+
+    int TryLockRead();
 
 private:
-	enum { eMaxWait = 0x0FFFFFFF, eMultiThreadCondition = true, };
-	enum { eActiveWriterState = -1, eNoWriterState = 0 };
+    enum {
+        eMaxWait = 0x0FFFFFFF, eMultiThreadCondition = true,
+    };
+    enum {
+        eActiveWriterState = -1, eNoWriterState = 0
+    };
 
-	OSMutex             fInternalLock;   // the internal lock         
-	OSCond              fReadersCond;    // the waiting readers             
-	OSCond              fWritersCond;    // the waiting writers             
-	int                 fState;          // -1:writer,0:free,>0:readers 
-	int                 fWriteWaiters;   // number of waiting writers   
-	int                 fReadWaiters;    // number of waiting readers
-	int                 fActiveReaders;  // number of active readers = fState >= 0;
+    OSMutex fInternalLock;   // the internal lock
+    OSCond fReadersCond;    // the waiting readers
+    OSCond fWritersCond;    // the waiting writers
+    int fState;          // -1:writer,0:free,>0:readers
+    int fWriteWaiters;   // number of waiting writers
+    int fReadWaiters;    // number of waiting readers
+    int fActiveReaders;  // number of active readers = fState >= 0;
 
-	inline void adjustState(int i) { fState += i; };
-	inline void adjustWriteWaiters(int i) { fWriteWaiters += i; };
-	inline void adjustReadWaiters(int i) { fReadWaiters += i; };
-	inline void setState(int i) { fState = i; };
-	inline void setWriteWaiters(int i) { fWriteWaiters = i; };
-	inline void setReadWaiters(int i) { fReadWaiters = i; };
+    inline void adjustState(int i) { fState += i; };
 
-	inline void addWriteWaiter() { adjustWriteWaiters(1); };
-	inline void removeWriteWaiter() { adjustWriteWaiters(-1); };
+    inline void adjustWriteWaiters(int i) { fWriteWaiters += i; };
 
-	inline void addReadWaiter() { adjustReadWaiters(1); };
-	inline void removeReadWaiter() { adjustReadWaiters(-1); };
+    inline void adjustReadWaiters(int i) { fReadWaiters += i; };
 
-	inline void addActiveReader() { adjustState(1); };
-	inline void removeActiveReader() { adjustState(-1); };
+    inline void setState(int i) { fState = i; };
+
+    inline void setWriteWaiters(int i) { fWriteWaiters = i; };
+
+    inline void setReadWaiters(int i) { fReadWaiters = i; };
+
+    inline void addWriteWaiter() { adjustWriteWaiters(1); };
+
+    inline void removeWriteWaiter() { adjustWriteWaiters(-1); };
+
+    inline void addReadWaiter() { adjustReadWaiters(1); };
+
+    inline void removeReadWaiter() { adjustReadWaiters(-1); };
+
+    inline void addActiveReader() { adjustState(1); };
+
+    inline void removeActiveReader() { adjustState(-1); };
 
 
-	inline bool waitingWriters() { return fWriteWaiters > 0; }
-	inline bool waitingReaders() { return fReadWaiters > 0; }
-	inline bool active() { return fState != 0; }
-	inline bool activeReaders() { return fState > 0; }
-	inline bool activeWriter() { return fState < 0; } // only one
+    inline bool waitingWriters() { return fWriteWaiters > 0; }
+
+    inline bool waitingReaders() { return fReadWaiters > 0; }
+
+    inline bool active() { return fState != 0; }
+
+    inline bool activeReaders() { return fState > 0; }
+
+    inline bool activeWriter() { return fState < 0; } // only one
 
 #if DEBUGMUTEXRW
-	static int fCount, fMaxCount;
-	static OSMutex sCountMutex;
-	void CountConflict(int i);
+    static int fCount, fMaxCount;
+    static OSMutex sCountMutex;
+    void CountConflict(int i);
 #endif
 
 };
 
-class   OSMutexReadWriteLocker
-{
+class OSMutexReadWriteLocker {
 public:
-	OSMutexReadWriteLocker(OSMutexRW *inMutexPtr) : fRWMutexPtr(inMutexPtr) {};
-	~OSMutexReadWriteLocker() { if (fRWMutexPtr != nullptr) fRWMutexPtr->Unlock(); }
+    OSMutexReadWriteLocker(OSMutexRW *inMutexPtr) : fRWMutexPtr(inMutexPtr) {};
+
+    ~OSMutexReadWriteLocker() { if (fRWMutexPtr != nullptr) fRWMutexPtr->Unlock(); }
 
 
-	void UnLock() { if (fRWMutexPtr != nullptr) fRWMutexPtr->Unlock(); }
-	void SetMutex(OSMutexRW *mutexPtr) { fRWMutexPtr = mutexPtr; }
-	OSMutexRW*  fRWMutexPtr;
+    void UnLock() { if (fRWMutexPtr != nullptr) fRWMutexPtr->Unlock(); }
+
+    void SetMutex(OSMutexRW *mutexPtr) { fRWMutexPtr = mutexPtr; }
+
+    OSMutexRW *fRWMutexPtr;
 };
 
-class   OSMutexReadLocker : public OSMutexReadWriteLocker
-{
+class OSMutexReadLocker : public OSMutexReadWriteLocker {
 public:
 
-	OSMutexReadLocker(OSMutexRW *inMutexPtr) : OSMutexReadWriteLocker(inMutexPtr) { if (OSMutexReadWriteLocker::fRWMutexPtr != nullptr) OSMutexReadWriteLocker::fRWMutexPtr->LockRead(); }
-	void Lock() { if (OSMutexReadWriteLocker::fRWMutexPtr != nullptr) OSMutexReadWriteLocker::fRWMutexPtr->LockRead(); }
+    OSMutexReadLocker(OSMutexRW *inMutexPtr) : OSMutexReadWriteLocker(inMutexPtr)
+    {
+        if (OSMutexReadWriteLocker::fRWMutexPtr != nullptr)OSMutexReadWriteLocker::fRWMutexPtr->LockRead();
+    }
+
+    void Lock() { if (OSMutexReadWriteLocker::fRWMutexPtr != nullptr) OSMutexReadWriteLocker::fRWMutexPtr->LockRead(); }
 };
 
-class   OSMutexWriteLocker : public OSMutexReadWriteLocker
-{
+class OSMutexWriteLocker : public OSMutexReadWriteLocker {
 public:
 
-	OSMutexWriteLocker(OSMutexRW *inMutexPtr) : OSMutexReadWriteLocker(inMutexPtr) { if (OSMutexReadWriteLocker::fRWMutexPtr != nullptr) OSMutexReadWriteLocker::fRWMutexPtr->LockWrite(); }
-	void Lock() { if (OSMutexReadWriteLocker::fRWMutexPtr != nullptr) OSMutexReadWriteLocker::fRWMutexPtr->LockWrite(); }
+    OSMutexWriteLocker(OSMutexRW *inMutexPtr) : OSMutexReadWriteLocker(inMutexPtr)
+    {
+        if (OSMutexReadWriteLocker::fRWMutexPtr != nullptr)OSMutexReadWriteLocker::fRWMutexPtr->LockWrite();
+    }
+
+    void Lock()
+    {
+        if (OSMutexReadWriteLocker::fRWMutexPtr != nullptr)
+            OSMutexReadWriteLocker::fRWMutexPtr->LockWrite();
+    }
 
 };
-
 
 
 #endif //_OSMUTEX_H_

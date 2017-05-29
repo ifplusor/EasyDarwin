@@ -22,67 +22,76 @@
  * @APPLE_LICENSE_HEADER_END@
  *
  */
- /*
-	 File:       UDPSocket.h
+/*
+    File:       UDPSocket.h
 
-	 Contains:   Adds additional Socket functionality specific to UDP.
-
-
+    Contains:   Adds additional Socket functionality specific to UDP.
 
 
- */
+
+
+*/
 
 
 #ifndef __UDPSOCKET_H__
 #define __UDPSOCKET_H__
 
 #ifndef __Win32__
+
 #include <sys/socket.h>
 #include <sys/uio.h>
+
 #endif
 
 #include "Socket.h"
 #include "UDPDemuxer.h"
 
 
-class UDPSocket : public Socket
-{
+/*
+ * Socket 的继承类,Socket 是 EventContext 的继承类。注意在 Socket 的构建函数里,调用了
+ * EventContext 的 SetTask 函数,将传入的 intask 参数付给 EventContext 的 fTask 成员。
+ */
+class UDPSocket : public Socket {
 public:
 
-	//Another socket type flag (in addition to the ones defined in Socket.h).
-	//The value of this can't conflict with those!
-	enum
-	{
-		kWantsDemuxer = 0x0100 //UInt32
-	};
+    //Another socket type flag (in addition to the ones defined in Socket.h).
+    //The value of this can't conflict with those!
+    enum {
+        kWantsDemuxer = 0x0100 //UInt32
+    };
 
-	UDPSocket(Task* inTask, UInt32 inSocketType);
-	virtual ~UDPSocket() { if (fDemuxer != NULL) delete fDemuxer; }
+    UDPSocket(Task *inTask, UInt32 inSocketType);
 
-	//Open
-	OS_Error    Open() { return Socket::Open(SOCK_DGRAM); }
+    virtual ~UDPSocket() { if (fDemuxer != NULL) delete fDemuxer; }
 
-	OS_Error    JoinMulticast(UInt32 inRemoteAddr);
-	OS_Error    LeaveMulticast(UInt32 inRemoteAddr);
-	OS_Error    SetTtl(UInt16 timeToLive);
-	OS_Error    SetMulticastInterface(UInt32 inLocalAddr);
+    //Open
+    OS_Error Open() { return Socket::Open(SOCK_DGRAM); }
 
-	//returns an ERRNO
-	OS_Error        SendTo(UInt32 inRemoteAddr, UInt16 inRemotePort,
-		void* inBuffer, UInt32 inLength);
+    OS_Error JoinMulticast(UInt32 inRemoteAddr);
 
-	OS_Error        RecvFrom(UInt32* outRemoteAddr, UInt16* outRemotePort,
-		void* ioBuffer, UInt32 inBufLen, UInt32* outRecvLen);
+    OS_Error LeaveMulticast(UInt32 inRemoteAddr);
 
-	//A UDP socket may or may not have a demuxer associated with it. The demuxer
-	//is a data structure so the socket can associate incoming data with the proper
-	//task to process that data (based on source IP addr & port)
-	UDPDemuxer*         GetDemuxer() { return fDemuxer; }
+    OS_Error SetTtl(UInt16 timeToLive);
+
+    OS_Error SetMulticastInterface(UInt32 inLocalAddr);
+
+    //returns an ERRNO
+    OS_Error SendTo(UInt32 inRemoteAddr, UInt16 inRemotePort,
+                    void *inBuffer, UInt32 inLength);
+
+    OS_Error RecvFrom(UInt32 *outRemoteAddr, UInt16 *outRemotePort,
+                      void *ioBuffer, UInt32 inBufLen, UInt32 *outRecvLen);
+
+    //A UDP socket may or may not have a demuxer associated with it. The demuxer
+    //is a data structure so the socket can associate incoming data with the proper
+    //task to process that data (based on source IP addr & port)
+    UDPDemuxer *GetDemuxer() { return fDemuxer; }
 
 private:
 
-	UDPDemuxer* fDemuxer;
-	struct sockaddr_in  fMsgAddr;
+    UDPDemuxer *fDemuxer;
+    struct sockaddr_in fMsgAddr;
 };
+
 #endif // __UDPSOCKET_H__
 

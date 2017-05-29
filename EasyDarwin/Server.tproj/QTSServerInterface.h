@@ -22,17 +22,17 @@
  * @APPLE_LICENSE_HEADER_END@
  *
  */
- /*
-	 File:       QTSServerInterface.h
+/*
+    File:       QTSServerInterface.h
 
-	 Contains:   This object defines an interface for getting and setting server-wide
-				 attributes, and storing global server resources.
+    Contains:   This object defines an interface for getting and setting server-wide
+                attributes, and storing global server resources.
 
-				 There can be only one of these objects per process, so there
-				 is a static accessor.
+                There can be only one of these objects per process, so there
+                is a static accessor.
 
 
- */
+*/
 
 
 #ifndef __QTSSERVERINTERFACE_H__
@@ -51,433 +51,493 @@
 #include "ResizeableStringFormatter.h"
 
 
-
- // OSRefTable;
+// OSRefTable;
 class UDPSocketPool;
+
 class QTSServerPrefs;
+
 class QTSSMessages;
+
 //class RTPStatsUpdaterTask;
 class RTPSessionInterface;
 
 // This object also functions as our assert logger
-class QTSSErrorLogStream : public QTSSStream, public AssertLogger
-{
+class QTSSErrorLogStream : public QTSSStream, public AssertLogger {
 public:
 
-	// This QTSSStream is used by modules to write to the error log
+    // This QTSSStream is used by modules to write to the error log
 
-	QTSSErrorLogStream() {}
-	virtual ~QTSSErrorLogStream() {}
+    QTSSErrorLogStream() {}
 
-	virtual QTSS_Error  Write(void* inBuffer, UInt32 inLen, UInt32* outLenWritten, UInt32 inFlags);
-	virtual void        LogAssert(char* inMessage);
+    virtual ~QTSSErrorLogStream() {}
+
+    virtual QTSS_Error Write(void *inBuffer, UInt32 inLen, UInt32 *outLenWritten, UInt32 inFlags);
+
+    virtual void LogAssert(char *inMessage);
 };
 
-class QTSServerInterface : public QTSSDictionary
-{
+/**
+ * QTSServerInterface 类属于 DSS server core,它基于 QTSSDictionary 类。
+ *
+ * QTSServer 是 QTSServerInterface 的继承类,在 StartServer 函数里创建 QTSServer 类对象的时候,
+ * 必然会创建 QTSServerInterface 类对象。
+ */
+class QTSServerInterface : public QTSSDictionary {
 public:
 
-	//Initialize must be called right off the bat to initialize dictionary resources
-	static void     Initialize();
+    //Initialize must be called right off the bat to initialize dictionary resources
+    static void Initialize();
 
-	//
-	// CONSTRUCTOR / DESTRUCTOR
+    //
+    // CONSTRUCTOR / DESTRUCTOR
 
-	QTSServerInterface();
-	virtual ~QTSServerInterface() {}
+    QTSServerInterface();
 
-	//
-	//
-	// STATISTICS MANIPULATION
-	// These functions are how the server keeps its statistics current
+    virtual ~QTSServerInterface() {}
 
-	void                AlterCurrentRTSPSessionCount(SInt32 inDifference)
-	{
-		OSMutexLocker locker(&fMutex); fNumRTSPSessions += inDifference;
-	}
-	void                AlterCurrentRTSPHTTPSessionCount(SInt32 inDifference)
-	{
-		OSMutexLocker locker(&fMutex); fNumRTSPHTTPSessions += inDifference;
-	}
-	void                SwapFromRTSPToHTTP()
-	{
-		OSMutexLocker locker(&fMutex); fNumRTSPSessions--; fNumRTSPHTTPSessions++;
-	}
+    //
+    //
+    // STATISTICS MANIPULATION
+    // These functions are how the server keeps its statistics current
 
-	//total rtp bytes sent by the server
-	void            IncrementTotalRTPBytes(UInt32 bytes)
-	{
-		//(void)atomic_add(&fPeriodicRTPBytes, bytes);
-		fPeriodicRTPBytes.fetch_add(bytes);
-	}
-	//total rtp packets sent by the server
-	void            IncrementTotalPackets()
-	{
-		//(void)atomic_add(&fPeriodicRTPPackets, 1);
-		++fPeriodicRTPPackets;
-	}
-	//total rtp bytes reported as lost by the clients
-	void            IncrementTotalRTPPacketsLost(UInt32 packets)
-	{
-		//(void)atomic_add(&fPeriodicRTPPacketsLost, packets);
-		fPeriodicRTPPacketsLost.fetch_add(packets);
-	}
+    void AlterCurrentRTSPSessionCount(SInt32 inDifference)
+    {
+        OSMutexLocker locker(&fMutex);
+        fNumRTSPSessions += inDifference;
+    }
 
-	// Also increments current RTP session count
-	void            IncrementTotalRTPSessions()
-	{
-		OSMutexLocker locker(&fMutex); fNumRTPSessions++; fTotalRTPSessions++;
-		UInt32 numModules = QTSServerInterface::GetNumModulesInRole(QTSSModule::kRedisSetRTSPLoadRole);
-		for (UInt32 currentModule = 0; currentModule < numModules; currentModule++)
-		{
-			QTSSModule* theModule = QTSServerInterface::GetModule(QTSSModule::kRedisSetRTSPLoadRole, currentModule);
-			(void)theModule->CallDispatch(Easy_RedisSetRTSPLoad_Role, NULL);
-		}
-	}
-	void            AlterCurrentRTPSessionCount(SInt32 inDifference)
-	{
-		OSMutexLocker locker(&fMutex); fNumRTPSessions += inDifference;
-		UInt32 numModules = QTSServerInterface::GetNumModulesInRole(QTSSModule::kRedisSetRTSPLoadRole);
-		for (UInt32 currentModule = 0; currentModule < numModules; currentModule++)
-		{
-			QTSSModule* theModule = QTSServerInterface::GetModule(QTSSModule::kRedisSetRTSPLoadRole, currentModule);
-			(void)theModule->CallDispatch(Easy_RedisSetRTSPLoad_Role, NULL);
-		}
-	}
+    void AlterCurrentRTSPHTTPSessionCount(SInt32 inDifference)
+    {
+        OSMutexLocker locker(&fMutex);
+        fNumRTSPHTTPSessions += inDifference;
+    }
 
+    void SwapFromRTSPToHTTP()
+    {
+        OSMutexLocker locker(&fMutex);
+        fNumRTSPSessions--;
+        fNumRTSPHTTPSessions++;
+    }
 
-	//track how many sessions are playing
-	void            AlterRTPPlayingSessions(SInt32 inDifference)
-	{
-		OSMutexLocker locker(&fMutex); fNumRTPPlayingSessions += inDifference;
-	}
+    // total rtp bytes sent by the server
+    void IncrementTotalRTPBytes(UInt32 bytes)
+    {
+        //(void)atomic_add(&fPeriodicRTPBytes, bytes);
+        fPeriodicRTPBytes.fetch_add(bytes);
+    }
 
+    // total rtp packets sent by the server
+    void IncrementTotalPackets()
+    {
+        //(void)atomic_add(&fPeriodicRTPPackets, 1);
+        ++fPeriodicRTPPackets;
+    }
 
-	void            IncrementTotalLate(SInt64 milliseconds)
-	{
-		OSMutexLocker locker(&fMutex);
-		fTotalLate += milliseconds;
-		if (milliseconds > fCurrentMaxLate) fCurrentMaxLate = milliseconds;
-		if (milliseconds > fMaxLate) fMaxLate = milliseconds;
-	}
+    // total rtp bytes reported as lost by the clients
+    void IncrementTotalRTPPacketsLost(UInt32 packets)
+    {
+        //(void)atomic_add(&fPeriodicRTPPacketsLost, packets);
+        fPeriodicRTPPacketsLost.fetch_add(packets);
+    }
 
-	void            IncrementTotalQuality(SInt32 level)
-	{
-		OSMutexLocker locker(&fMutex); fTotalQuality += level;
-	}
+    // Also increments current RTP session count
+    void IncrementTotalRTPSessions()
+    {
+        OSMutexLocker locker(&fMutex);
+        fNumRTPSessions++;
+        fTotalRTPSessions++;
+        UInt32 numModules = QTSServerInterface::GetNumModulesInRole(QTSSModule::kRedisSetRTSPLoadRole);
+        for (UInt32 currentModule = 0; currentModule < numModules; currentModule++) {
+            QTSSModule *theModule = QTSServerInterface::GetModule(QTSSModule::kRedisSetRTSPLoadRole, currentModule);
+            (void) theModule->CallDispatch(Easy_RedisSetRTSPLoad_Role, NULL);
+        }
+    }
+
+    void AlterCurrentRTPSessionCount(SInt32 inDifference)
+    {
+        OSMutexLocker locker(&fMutex);
+        fNumRTPSessions += inDifference;
+        UInt32 numModules = QTSServerInterface::GetNumModulesInRole(QTSSModule::kRedisSetRTSPLoadRole);
+        for (UInt32 currentModule = 0; currentModule < numModules; currentModule++) {
+            QTSSModule *theModule = QTSServerInterface::GetModule(QTSSModule::kRedisSetRTSPLoadRole, currentModule);
+            (void) theModule->CallDispatch(Easy_RedisSetRTSPLoad_Role, NULL);
+        }
+    }
 
 
-	void            IncrementNumThinned(SInt32 inDifference)
-	{
-		OSMutexLocker locker(&fMutex); fNumThinned += inDifference;
-	}
-
-	void            ClearTotalLate()
-	{
-		OSMutexLocker locker(&fMutex); fTotalLate = 0;
-	}
-	void            ClearCurrentMaxLate()
-	{
-		OSMutexLocker locker(&fMutex); fCurrentMaxLate = 0;
-	}
-	void            ClearTotalQuality()
-	{
-		OSMutexLocker locker(&fMutex); fTotalQuality = 0;
-	}
+    // track how many sessions are playing
+    void AlterRTPPlayingSessions(SInt32 inDifference)
+    {
+        OSMutexLocker locker(&fMutex);
+        fNumRTPPlayingSessions += inDifference;
+    }
 
 
-	void 			InitNumThreads(UInt32 numThreads) { fNumThreads = numThreads; }
-	//
-	// ACCESSORS
+    void IncrementTotalLate(SInt64 milliseconds)
+    {
+        OSMutexLocker locker(&fMutex);
+        fTotalLate += milliseconds;
+        if (milliseconds > fCurrentMaxLate) fCurrentMaxLate = milliseconds;
+        if (milliseconds > fMaxLate) fMaxLate = milliseconds;
+    }
 
-	QTSS_ServerState    GetServerState() { return fServerState; }
-	UInt32              GetNumRTPSessions() { return fNumRTPSessions; }
-	UInt32              GetNumRTSPSessions() { return fNumRTSPSessions; }
-	UInt32              GetNumRTSPHTTPSessions() { return fNumRTSPHTTPSessions; }
+    void IncrementTotalQuality(SInt32 level)
+    {
+        OSMutexLocker locker(&fMutex);
+        fTotalQuality += level;
+    }
 
-	UInt32              GetTotalRTPSessions() { return fTotalRTPSessions; }
-	UInt32              GetNumRTPPlayingSessions() { return fNumRTPPlayingSessions; }
 
-	UInt32              GetCurBandwidthInBits() { return fCurrentRTPBandwidthInBits; }
-	UInt32              GetAvgBandwidthInBits() { return fAvgRTPBandwidthInBits; }
-	UInt32              GetRTPPacketsPerSec() { return fRTPPacketsPerSecond; }
-	UInt64              GetTotalRTPBytes() { return fTotalRTPBytes; }
-	UInt64              GetTotalRTPPacketsLost() { return fTotalRTPPacketsLost; }
-	UInt64              GetTotalRTPPackets() { return fTotalRTPPackets; }
-	Float32             GetCPUPercent() { return fCPUPercent; }
-	bool              SigIntSet() { return fSigInt; }
-	bool				SigTermSet() { return fSigTerm; }
+    void IncrementNumThinned(SInt32 inDifference)
+    {
+        OSMutexLocker locker(&fMutex);
+        fNumThinned += inDifference;
+    }
 
-	UInt32              GetDebugLevel() { return fDebugLevel; }
-	UInt32              GetDebugOptions() { return fDebugOptions; }
-	void                SetDebugLevel(UInt32 debugLevel) { fDebugLevel = debugLevel; }
-	void                SetDebugOptions(UInt32 debugOptions) { fDebugOptions = debugOptions; }
+    void ClearTotalLate()
+    {
+        OSMutexLocker locker(&fMutex);
+        fTotalLate = 0;
+    }
 
-	SInt64				GetMaxLate() { return fMaxLate; };
-	SInt64				GetTotalLate() { return fTotalLate; };
-	SInt64				GetCurrentMaxLate() { return fCurrentMaxLate; };
-	SInt64				GetTotalQuality() { return fTotalQuality; };
-	SInt32				GetNumThinned() { return fNumThinned; };
-	UInt32				GetNumThreads() { return fNumThreads; };
+    void ClearCurrentMaxLate()
+    {
+        OSMutexLocker locker(&fMutex);
+        fCurrentMaxLate = 0;
+    }
 
-	//
-	//
-	// GLOBAL OBJECTS REPOSITORY
-	// This object is in fact global, so there is an accessor for it as well.
+    void ClearTotalQuality()
+    {
+        OSMutexLocker locker(&fMutex);
+        fTotalQuality = 0;
+    }
 
-	static QTSServerInterface*  GetServer() { return sServer; }
 
-	//Allows you to map RTP session IDs (strings) to actual RTP session objects
-	OSRefTable*         GetRTPSessionMap() { return fRTPMap; }
-	OSRefTable*			GetReflectorSessionMap() { return fReflectorSessionMap; }
+    void InitNumThreads(UInt32 numThreads) { fNumThreads = numThreads; }
+    //
+    // ACCESSORS
 
-	//Server provides a statically created & bound UDPSocket / Demuxer pair
-	//for each IP address setup to serve RTP. You access those pairs through
-	//this function. This returns a pair pre-bound to the IPAddr specified.
-	UDPSocketPool*      GetSocketPool() { return fSocketPool; }
+    QTSS_ServerState GetServerState() { return fServerState; }
 
-	char* GetCloudServiceNodeID() { return fCloudServiceNodeID; }
+    UInt32 GetNumRTPSessions() { return fNumRTPSessions; }
 
-	QTSServerPrefs*     GetPrefs() { return fSrvrPrefs; }
-	QTSSMessages*       GetMessages() { return fSrvrMessages; }
+    UInt32 GetNumRTSPSessions() { return fNumRTSPSessions; }
 
-	//
-	//
-	// SERVER NAME & VERSION
+    UInt32 GetNumRTSPHTTPSessions() { return fNumRTSPHTTPSessions; }
 
-	static StrPtrLen&   GetServerName() { return sServerNameStr; }
-	static StrPtrLen&   GetServerVersion() { return sServerVersionStr; }
-	static StrPtrLen&   GetServerPlatform() { return sServerPlatformStr; }
-	static StrPtrLen&   GetServerBuildDate() { return sServerBuildDateStr; }
-	static StrPtrLen&   GetServerHeader() { return sServerHeaderPtr; }
-	static StrPtrLen&   GetServerBuild() { return sServerBuildStr; }
-	static StrPtrLen&   GetServerComment() { return sServerCommentStr; }
+    UInt32 GetTotalRTPSessions() { return fTotalRTPSessions; }
 
-	//
-	// PUBLIC HEADER
-	static StrPtrLen*   GetPublicHeader() { return &sPublicHeaderStr; }
+    UInt32 GetNumRTPPlayingSessions() { return fNumRTPPlayingSessions; }
 
-	//
-	// KILL ALL
-	void                KillAllRTPSessions();
+    UInt32 GetCurBandwidthInBits() { return fCurrentRTPBandwidthInBits; }
 
-	//
-	// SIGINT - to interrupt the server, set this flag and the server will shut down
-	void                SetSigInt() { fSigInt = true; }
+    UInt32 GetAvgBandwidthInBits() { return fAvgRTPBandwidthInBits; }
 
-	// SIGTERM - to kill the server, set this flag and the server will shut down
-	void                SetSigTerm() { fSigTerm = true; }
+    UInt32 GetRTPPacketsPerSec() { return fRTPPacketsPerSecond; }
 
-	//
-	// MODULE STORAGE
+    UInt64 GetTotalRTPBytes() { return fTotalRTPBytes; }
 
-	// All module objects are stored here, and are accessable through
-	// these routines.
+    UInt64 GetTotalRTPPacketsLost() { return fTotalRTPPacketsLost; }
 
-	// Returns the number of modules that act in a given role
-	static UInt32       GetNumModulesInRole(QTSSModule::RoleIndex inRole)
-	{
-		Assert(inRole < QTSSModule::kNumRoles); return sNumModulesInRole[inRole];
-	}
+    UInt64 GetTotalRTPPackets() { return fTotalRTPPackets; }
 
-	// Allows the caller to iterate over all modules that act in a given role           
-	static QTSSModule*  GetModule(QTSSModule::RoleIndex inRole, UInt32 inIndex)
-	{
-		Assert(inRole < QTSSModule::kNumRoles);
-		Assert(inIndex < sNumModulesInRole[inRole]);
-		if (inRole >= QTSSModule::kNumRoles) //index out of bounds, shouldn't happen
-		{
-			return NULL;
-		}
-		if (inIndex >= sNumModulesInRole[inRole]) //index out of bounds, shouldn't happen
-		{
-			return NULL;
-		}
-		return sModuleArray[inRole][inIndex];
-	}
+    Float32 GetCPUPercent() { return fCPUPercent; }
 
-	//
-	// We need to override this. This is how we implement the QTSS_StateChange_Role
-	virtual void    SetValueComplete(UInt32 inAttrIndex, QTSSDictionaryMap* inMap,
-		UInt32 inValueIndex, void* inNewValue, UInt32 inNewValueLen);
+    bool SigIntSet() { return fSigInt; }
 
-	//
-	// ERROR LOGGING
+    bool SigTermSet() { return fSigTerm; }
 
-	// Invokes the error logging modules with some data
-	static void     LogError(QTSS_ErrorVerbosity inVerbosity, char* inBuffer);
+    UInt32 GetDebugLevel() { return fDebugLevel; }
 
-	// Returns the error log stream
-	static QTSSErrorLogStream* GetErrorLogStream() { return &sErrorLogStream; }
+    UInt32 GetDebugOptions() { return fDebugOptions; }
 
-	//
-	// LOCKING DOWN THE SERVER OBJECT
-	OSMutex*        GetServerObjectMutex() { return &fMutex; }
+    void SetDebugLevel(UInt32 debugLevel) { fDebugLevel = debugLevel; }
 
+    void SetDebugOptions(UInt32 debugOptions) { fDebugOptions = debugOptions; }
+
+    SInt64 GetMaxLate() { return fMaxLate; };
+
+    SInt64 GetTotalLate() { return fTotalLate; };
+
+    SInt64 GetCurrentMaxLate() { return fCurrentMaxLate; };
+
+    SInt64 GetTotalQuality() { return fTotalQuality; };
+
+    SInt32 GetNumThinned() { return fNumThinned; };
+
+    UInt32 GetNumThreads() { return fNumThreads; };
+
+    //
+    //
+    // GLOBAL OBJECTS REPOSITORY
+    // This object is in fact global, so there is an accessor for it as well.
+
+    static QTSServerInterface *GetServer() { return sServer; }
+
+    //Allows you to map RTP session IDs (strings) to actual RTP session objects
+    OSRefTable *GetRTPSessionMap() { return fRTPMap; }
+
+    OSRefTable *GetReflectorSessionMap() { return fReflectorSessionMap; }
+
+    //Server provides a statically created & bound UDPSocket / Demuxer pair
+    //for each IP address setup to serve RTP. You access those pairs through
+    //this function. This returns a pair pre-bound to the IPAddr specified.
+    UDPSocketPool *GetSocketPool() { return fSocketPool; }
+
+    char *GetCloudServiceNodeID() { return fCloudServiceNodeID; }
+
+    QTSServerPrefs *GetPrefs() { return fSrvrPrefs; }
+
+    QTSSMessages *GetMessages() { return fSrvrMessages; }
+
+    //
+    //
+    // SERVER NAME & VERSION
+
+    static StrPtrLen &GetServerName() { return sServerNameStr; }
+
+    static StrPtrLen &GetServerVersion() { return sServerVersionStr; }
+
+    static StrPtrLen &GetServerPlatform() { return sServerPlatformStr; }
+
+    static StrPtrLen &GetServerBuildDate() { return sServerBuildDateStr; }
+
+    static StrPtrLen &GetServerHeader() { return sServerHeaderPtr; }
+
+    static StrPtrLen &GetServerBuild() { return sServerBuildStr; }
+
+    static StrPtrLen &GetServerComment() { return sServerCommentStr; }
+
+    //
+    // PUBLIC HEADER
+    static StrPtrLen *GetPublicHeader() { return &sPublicHeaderStr; }
+
+    //
+    // KILL ALL
+    void KillAllRTPSessions();
+
+    //
+    // SIGINT - to interrupt the server, set this flag and the server will shut down
+    void SetSigInt() { fSigInt = true; }
+
+    // SIGTERM - to kill the server, set this flag and the server will shut down
+    void SetSigTerm() { fSigTerm = true; }
+
+    //
+    // MODULE STORAGE
+
+    // All module objects are stored here, and are accessable through
+    // these routines.
+
+    // Returns the number of modules that act in a given role
+    static UInt32 GetNumModulesInRole(QTSSModule::RoleIndex inRole)
+    {
+        Assert(inRole < QTSSModule::kNumRoles);
+        return sNumModulesInRole[inRole];
+    }
+
+    // Allows the caller to iterate over all modules that act in a given role
+    static QTSSModule *GetModule(QTSSModule::RoleIndex inRole, UInt32 inIndex)
+    {
+        Assert(inRole < QTSSModule::kNumRoles);
+        Assert(inIndex < sNumModulesInRole[inRole]);
+        if (inRole >= QTSSModule::kNumRoles) //index out of bounds, shouldn't happen
+        {
+            return NULL;
+        }
+        if (inIndex >= sNumModulesInRole[inRole]) //index out of bounds, shouldn't happen
+        {
+            return NULL;
+        }
+        return sModuleArray[inRole][inIndex];
+    }
+
+    //
+    // We need to override this. This is how we implement the QTSS_StateChange_Role
+    virtual void SetValueComplete(UInt32 inAttrIndex, QTSSDictionaryMap *inMap,
+                                  UInt32 inValueIndex, void *inNewValue, UInt32 inNewValueLen);
+
+    //
+    // ERROR LOGGING
+
+    // Invokes the error logging modules with some data
+    static void LogError(QTSS_ErrorVerbosity inVerbosity, char *inBuffer);
+
+    // Returns the error log stream
+    static QTSSErrorLogStream *GetErrorLogStream() { return &sErrorLogStream; }
+
+    //
+    // LOCKING DOWN THE SERVER OBJECT
+    OSMutex *GetServerObjectMutex() { return &fMutex; }
 
 
 protected:
 
-	// Setup by the derived RTSPServer object
+    // Setup by the derived RTSPServer object
 
-	//Sockets are allocated global to the server, and arbitrated through this pool here.
-	//RTCP data is processed completely within the following task.
-	UDPSocketPool*              fSocketPool;
+    //Sockets are allocated global to the server, and arbitrated through this pool here.
+    //RTCP data is processed completely within the following task.
+    UDPSocketPool *fSocketPool;
 
-	// All RTP sessions are put into this map
-	OSRefTable*                 fRTPMap;
-	OSRefTable*					fReflectorSessionMap;
+    // All RTP sessions are put into this map
+    OSRefTable *fRTPMap;
+    OSRefTable *fReflectorSessionMap;
 
-	QTSServerPrefs*             fSrvrPrefs;
-	QTSSMessages*               fSrvrMessages;
+    QTSServerPrefs *fSrvrPrefs;
+    QTSSMessages *fSrvrMessages;
 
-	QTSServerPrefs*				fStubSrvrPrefs;
-	QTSSMessages*				fStubSrvrMessages;
+    QTSServerPrefs *fStubSrvrPrefs;
+    QTSSMessages *fStubSrvrMessages;
 
-	QTSS_ServerState            fServerState;
-	UInt32                      fDefaultIPAddr;
+    QTSS_ServerState fServerState;
+    UInt32 fDefaultIPAddr;
 
-	// Array of pointers to TCPListenerSockets.
-	TCPListenerSocket**         fListeners;
-	UInt32                      fNumListeners; // Number of elements in the array
+    // Array of pointers to TCPListenerSockets.
+    TCPListenerSocket **fListeners;
+    UInt32 fNumListeners; // Number of elements in the array
 
-	// startup time
-	SInt64						fStartupTime_UnixMilli;
-	SInt32						fGMTOffset;
+    // startup time
+    SInt64 fStartupTime_UnixMilli;
+    SInt32 fGMTOffset;
 
-	static ResizeableStringFormatter    sPublicHeaderFormatter;
-	static StrPtrLen                    sPublicHeaderStr;
+    static ResizeableStringFormatter sPublicHeaderFormatter;
+    static StrPtrLen sPublicHeaderStr;
 
-	//
-	// MODULE DATA
+    //
+    // MODULE DATA
 
-	static QTSSModule**             sModuleArray[QTSSModule::kNumRoles];
-	static UInt32                   sNumModulesInRole[QTSSModule::kNumRoles];
-	static OSQueue                  sModuleQueue;
-	static QTSSErrorLogStream       sErrorLogStream;
+    static QTSSModule **sModuleArray[QTSSModule::kNumRoles];
+    static UInt32 sNumModulesInRole[QTSSModule::kNumRoles];
+    static OSQueue sModuleQueue;
+    static QTSSErrorLogStream sErrorLogStream;
 
-	char fCloudServiceNodeID[QTSS_MAX_SESSION_ID_LENGTH];
+    char fCloudServiceNodeID[QTSS_MAX_SESSION_ID_LENGTH];
 
 private:
 
-	enum
-	{
-		kMaxServerHeaderLen = 1000
-	};
+    enum {
+        kMaxServerHeaderLen = 1000
+    };
 
-	static void* TimeConnected(QTSSDictionary* inConnection, UInt32* outLen);
+    static void *TimeConnected(QTSSDictionary *inConnection, UInt32 *outLen);
 
-	static UInt32       sServerAPIVersion;
-	static StrPtrLen    sServerNameStr;
-	static StrPtrLen    sServerVersionStr;
-	static StrPtrLen    sServerBuildStr;
-	static StrPtrLen    sServerCommentStr;
-	static StrPtrLen    sServerPlatformStr;
-	static StrPtrLen    sServerBuildDateStr;
-	static char         sServerHeader[kMaxServerHeaderLen];
-	static StrPtrLen    sServerHeaderPtr;
+    static UInt32 sServerAPIVersion;
+    static StrPtrLen sServerNameStr;
+    static StrPtrLen sServerVersionStr;
+    static StrPtrLen sServerBuildStr;
+    static StrPtrLen sServerCommentStr;
+    static StrPtrLen sServerPlatformStr;
+    static StrPtrLen sServerBuildDateStr;
+    static char sServerHeader[kMaxServerHeaderLen];
+    static StrPtrLen sServerHeaderPtr;
 
-	OSMutex             fMutex;
+    OSMutex fMutex;
 
-	UInt32              fNumRTSPSessions;
-	UInt32              fNumRTSPHTTPSessions;
-	UInt32              fNumRTPSessions;
+    UInt32 fNumRTSPSessions;
+    UInt32 fNumRTSPHTTPSessions;
+    UInt32 fNumRTPSessions;
 
-	//stores the current number of playing connections.
-	UInt32              fNumRTPPlayingSessions;
+    //stores the current number of playing connections.
+    UInt32 fNumRTPPlayingSessions;
 
-	//stores the total number of connections since startup.
-	UInt32              fTotalRTPSessions;
-	//stores the total number of bytes served since startup
-	UInt64              fTotalRTPBytes;
-	//total number of rtp packets sent since startup
-	UInt64              fTotalRTPPackets;
-	//stores the total number of bytes lost (as reported by clients) since startup
-	UInt64              fTotalRTPPacketsLost;
+    //stores the total number of connections since startup.
+    UInt32 fTotalRTPSessions;
+    //stores the total number of bytes served since startup
+    UInt64 fTotalRTPBytes;
+    //total number of rtp packets sent since startup
+    UInt64 fTotalRTPPackets;
+    //stores the total number of bytes lost (as reported by clients) since startup
+    UInt64 fTotalRTPPacketsLost;
 
-	//because there is no 64 bit atomic add (for obvious reasons), we efficiently
-	//implement total byte counting by atomic adding to this variable, then every
-	//once in awhile updating the sTotalBytes.
-	//unsigned int        fPeriodicRTPBytes;
+    //because there is no 64 bit atomic add (for obvious reasons), we efficiently
+    //implement total byte counting by atomic adding to this variable, then every
+    //once in awhile updating the sTotalBytes.
+    //unsigned int        fPeriodicRTPBytes;
 
-	std::atomic_uint	fPeriodicRTPBytes;
+    std::atomic_uint fPeriodicRTPBytes;
 
-	//unsigned int        fPeriodicRTPPacketsLost;
+    //unsigned int        fPeriodicRTPPacketsLost;
 
-	std::atomic_uint	fPeriodicRTPPacketsLost;
+    std::atomic_uint fPeriodicRTPPacketsLost;
 
-	//unsigned int        fPeriodicRTPPackets;
+    //unsigned int        fPeriodicRTPPackets;
 
-	std::atomic_uint	fPeriodicRTPPackets;
+    std::atomic_uint fPeriodicRTPPackets;
 
-	//stores the current served bandwidth in BITS per second
-	UInt32              fCurrentRTPBandwidthInBits;
-	UInt32              fAvgRTPBandwidthInBits;
-	UInt32              fRTPPacketsPerSecond;
+    //stores the current served bandwidth in BITS per second
+    UInt32 fCurrentRTPBandwidthInBits;
+    UInt32 fAvgRTPBandwidthInBits;
+    UInt32 fRTPPacketsPerSecond;
 
-	Float32             fCPUPercent;
-	Float32             fCPUTimeUsedInSec;
+    Float32 fCPUPercent;
+    Float32 fCPUTimeUsedInSec;
 
-	// stores # of UDP sockets in the server currently (gets updated lazily via.
-	// param retrieval function)
-	UInt32              fTotalUDPSockets;
+    // stores # of UDP sockets in the server currently (gets updated lazily via.
+    // param retrieval function)
+    UInt32 fTotalUDPSockets;
 
-	// are we out of descriptors?
-	bool              fIsOutOfDescriptors;
+    // are we out of descriptors?
+    bool fIsOutOfDescriptors;
 
-	// Storage for current time attribute
-	SInt64              fCurrentTime_UnixMilli;
+    // Storage for current time attribute
+    SInt64 fCurrentTime_UnixMilli;
 
-	// Stats for UDP retransmits
-	UInt32              fUDPWastageInBytes;
-	UInt32              fNumUDPBuffers;
+    // Stats for UDP retransmits
+    UInt32 fUDPWastageInBytes;
+    UInt32 fNumUDPBuffers;
 
-	bool              fSigInt;
-	bool              fSigTerm;
+    bool fSigInt;
+    bool fSigTerm;
 
-	UInt32              fDebugLevel;
-	UInt32              fDebugOptions;
+    UInt32 fDebugLevel;
+    UInt32 fDebugOptions;
 
 
-	SInt64          fMaxLate;
-	SInt64          fTotalLate;
-	SInt64          fCurrentMaxLate;
-	SInt64          fTotalQuality;
-	SInt32          fNumThinned;
-	UInt32          fNumThreads;
+    SInt64 fMaxLate;
+    SInt64 fTotalLate;
+    SInt64 fCurrentMaxLate;
+    SInt64 fTotalQuality;
+    SInt32 fNumThinned;
+    UInt32 fNumThreads;
 
-	// Param retrieval functions
-	static void* CurrentUnixTimeMilli(QTSSDictionary* inServer, UInt32* outLen);
-	static void* GetTotalUDPSockets(QTSSDictionary* inServer, UInt32* outLen);
-	static void* IsOutOfDescriptors(QTSSDictionary* inServer, UInt32* outLen);
-	static void* GetNumUDPBuffers(QTSSDictionary* inServer, UInt32* outLen);
-	static void* GetNumWastedBytes(QTSSDictionary* inServer, UInt32* outLen);
+    // Param retrieval functions
+    static void *CurrentUnixTimeMilli(QTSSDictionary *inServer, UInt32 *outLen);
 
-	static QTSServerInterface*  sServer;
-	static QTSSAttrInfoDict::AttrInfo   sAttributes[];
-	static QTSSAttrInfoDict::AttrInfo   sConnectedUserAttributes[];
+    static void *GetTotalUDPSockets(QTSSDictionary *inServer, UInt32 *outLen);
 
-	friend class RTPStatsUpdaterTask;
+    static void *IsOutOfDescriptors(QTSSDictionary *inServer, UInt32 *outLen);
+
+    static void *GetNumUDPBuffers(QTSSDictionary *inServer, UInt32 *outLen);
+
+    static void *GetNumWastedBytes(QTSSDictionary *inServer, UInt32 *outLen);
+
+    static QTSServerInterface *sServer;
+    static QTSSAttrInfoDict::AttrInfo sAttributes[];
+    static QTSSAttrInfoDict::AttrInfo sConnectedUserAttributes[];
+
+    friend class RTPStatsUpdaterTask;
 };
 
 
-class RTPStatsUpdaterTask : public Task
-{
+class RTPStatsUpdaterTask : public Task {
 public:
 
-	// This class runs periodically to compute current totals & averages
-	RTPStatsUpdaterTask();
-	virtual ~RTPStatsUpdaterTask() {}
+    // This class runs periodically to compute current totals & averages
+    RTPStatsUpdaterTask();
+
+    virtual ~RTPStatsUpdaterTask() {}
 
 private:
 
-	virtual SInt64 Run();
-	RTPSessionInterface* GetNewestSession(OSRefTable* inRTPSessionMap);
-	Float32 GetCPUTimeInSeconds();
+    virtual SInt64 Run();
 
-	SInt64 fLastBandwidthTime;
-	SInt64 fLastBandwidthAvg;
-	SInt64 fLastBytesSent;
+    RTPSessionInterface *GetNewestSession(OSRefTable *inRTPSessionMap);
+
+    Float32 GetCPUTimeInSeconds();
+
+    SInt64 fLastBandwidthTime;
+    SInt64 fLastBandwidthAvg;
+    SInt64 fLastBytesSent;
 };
 
 #endif // __QTSSERVERINTERFACE_H__

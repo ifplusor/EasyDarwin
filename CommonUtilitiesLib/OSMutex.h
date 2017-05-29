@@ -22,34 +22,40 @@
  * @APPLE_LICENSE_HEADER_END@
  *
  */
- /*
-	 File:       OSMutex.h
+/*
+    File:       OSMutex.h
 
-	 Contains:   Platform - independent mutex header. The implementation of this object
-				 is platform - specific. Each platform must define an independent
-				 OSMutex.h & OSMutex.cpp file.
+    Contains:   Platform - independent mutex header. The implementation of this object
+                is platform - specific. Each platform must define an independent
+                OSMutex.h & OSMutex.cpp file.
 
-				 This file is for Mac OS X Server only
+                This file is for Mac OS X Server only
 
 
 
- */
+*/
 
 #ifndef _OSMUTEX_H_
 #define _OSMUTEX_H_
 
 #include <stdlib.h>
 #include "SafeStdLib.h"
+
 #ifndef __Win32__
+
 #include <sys/errno.h>
+
 #if __PTHREADS_MUTEXES__
 #if __MacOSX__
 #ifndef _POSIX_PTHREAD_H
 #include <pthread.h>
 #endif
 #else
+
 #include <pthread.h>
+
 #endif
+
 #include <unistd.h>
 
 #else
@@ -63,84 +69,91 @@
 
 class OSCond;
 
-class OSMutex
-{
+class OSMutex {
 public:
 
-	OSMutex();
-	~OSMutex();
+    OSMutex();
 
-	inline void Lock();
-	inline void Unlock();
+    ~OSMutex();
 
-	// Returns true on successful grab of the lock, false on failure
-	inline bool TryLock();
+    inline void Lock();
+
+    inline void Unlock();
+
+    // Returns true on successful grab of the lock, false on failure
+    inline bool TryLock();
 
 private:
 
 #ifdef __Win32__
-	CRITICAL_SECTION fMutex;
+    CRITICAL_SECTION fMutex;
 
-	DWORD       fHolder;
-	UInt32      fHolderCount;
+    DWORD       fHolder;
+    UInt32      fHolderCount;
 
 #elif !__PTHREADS_MUTEXES__
-	mymutex_t fMutex;
+    mymutex_t fMutex;
 #else
-	pthread_mutex_t fMutex;
-	// These two platforms don't implement pthreads recursive mutexes, so
-	// we have to do it manually
-	pthread_t   fHolder;
-	UInt32      fHolderCount;
+    pthread_mutex_t fMutex;
+    // These two platforms don't implement pthreads recursive mutexes, so
+    // we have to do it manually
+    pthread_t fHolder;
+    UInt32 fHolderCount;
 #endif
 
-#if __PTHREADS_MUTEXES__ || __Win32__       
-	void        RecursiveLock();
-	void        RecursiveUnlock();
-	bool      RecursiveTryLock();
+#if __PTHREADS_MUTEXES__ || __Win32__
+
+    void RecursiveLock();
+
+    void RecursiveUnlock();
+
+    bool RecursiveTryLock();
+
 #endif
-	friend class OSCond;
+
+    friend class OSCond;
 };
 
-class OSMutexLocker
-{
+class OSMutexLocker {
 public:
 
-	OSMutexLocker(OSMutex* inMutexP) : fMutex(inMutexP) { if (fMutex != nullptr) fMutex->Lock(); }
-	~OSMutexLocker() { if (fMutex != nullptr) fMutex->Unlock(); }
+    OSMutexLocker(OSMutex *inMutexP) : fMutex(inMutexP) { if (fMutex != nullptr) fMutex->Lock(); }
 
-	void Lock() { if (fMutex != nullptr) fMutex->Lock(); }
-	void Unlock() { if (fMutex != nullptr) fMutex->Unlock(); }
+    ~OSMutexLocker() { if (fMutex != nullptr) fMutex->Unlock(); }
+
+    void Lock() { if (fMutex != nullptr) fMutex->Lock(); }
+
+    void Unlock() { if (fMutex != nullptr) fMutex->Unlock(); }
 
 private:
-	OSMutex*    fMutex;
+    OSMutex *fMutex;
 
 };
 
 void OSMutex::Lock()
 {
 #if __PTHREADS_MUTEXES__ || __Win32__
-	this->RecursiveLock();
+    this->RecursiveLock();
 #else
-	mymutex_lock(fMutex);
+    mymutex_lock(fMutex);
 #endif //!__PTHREADS__
 }
 
 void OSMutex::Unlock()
 {
 #if __PTHREADS_MUTEXES__ || __Win32__
-	this->RecursiveUnlock();
+    this->RecursiveUnlock();
 #else
-	mymutex_unlock(fMutex);
+    mymutex_unlock(fMutex);
 #endif //!__PTHREADS__
 }
 
 bool OSMutex::TryLock()
 {
 #if __PTHREADS_MUTEXES__ || __Win32__
-	return this->RecursiveTryLock();
+    return this->RecursiveTryLock();
 #else
-	return (bool)mymutex_try_lock(fMutex);
+    return (bool)mymutex_try_lock(fMutex);
 #endif //!__PTHREADS__
 }
 

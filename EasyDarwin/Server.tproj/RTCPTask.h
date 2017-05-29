@@ -22,30 +22,34 @@
  * @APPLE_LICENSE_HEADER_END@
  *
  */
- /*
-	 File:       RTCPTask.h
+/*
+    File:       RTCPTask.h
 
-	 Contains:   A task object that processes all incoming RTCP packets
-				 for the server, and passes each one onto the task for
-				 which it belongs.
+    Contains:   A task object that processes all incoming RTCP packets
+                for the server, and passes each one onto the task for
+                which it belongs.
 
- */
+*/
 
 #ifndef __RTCP_TASK_H__
 #define __RTCP_TASK_H__
 
 #include "Task.h"
 
-class RTCPTask : public Task
-{
+class RTCPTask : public Task {
 public:
-	//This task handles all incoming RTCP data. It just polls, so make sure
-	//to start the polling process by signalling a start event.
-	RTCPTask() : Task() { this->SetTaskName("RTCPTask"); this->Signal(Task::kStartEvent); }
-	virtual ~RTCPTask() {}
+    //This task handles all incoming RTCP data. It just polls, so make sure
+    //to start the polling process by signalling a start event.
+    RTCPTask() : Task()
+    {
+        this->SetTaskName("RTCPTask");
+        this->Signal(Task::kStartEvent);
+    }
+
+    virtual ~RTCPTask() {}
 
 private:
-	virtual SInt64 Run();
+    virtual SInt64 Run();
 };
 
 #endif //__RTCP_TASK_H__

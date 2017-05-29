@@ -36,6 +36,10 @@
 
 #include "QTSS.h"
 
+/**
+ * 属于 Server core 一部分。该类主要是为 QTSServer 提供支持,比如一些独立子系统/模块通过
+ * sCallbacks 来调用 DSS 的处理函数,而这些函数由 QTSSCallbacks 类提供定义。
+ */
 class QTSSCallbacks
 {
 public:

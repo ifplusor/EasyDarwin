@@ -22,84 +22,86 @@
  * @APPLE_LICENSE_HEADER_END@
  *
  */
- /*
-	 File:       TCPSocket.h
+/*
+    File:       TCPSocket.h
 
-	 Contains:   TCP socket object
-
-
+    Contains:   TCP socket object
 
 
- */
+
+
+*/
 
 #ifndef __TCPSOCKET_H__
 #define __TCPSOCKET_H__
 
 #ifndef __Win32__
+
 #include <sys/types.h>
 #include <sys/socket.h>
+
 #endif
 
 #include "Socket.h"
 #include "Task.h"
 #include "StrPtrLen.h"
 
-class TCPSocket : public Socket
-{
+class TCPSocket : public Socket {
 public:
 
-	//TCPSocket takes an optional task object which will get notified when
-	//certain events happen on this socket. Those events are:
-	//
-	//S_DATA:               Data is currently available on the socket.
-	//S_CONNECTIONCLOSING:  Client is closing the connection. No longer necessary
-	//                      to call Close or Disconnect, Snd & Rcv will fail.
-	TCPSocket(Task* notifytask, UInt32 inSocketType)
-		: Socket(notifytask, inSocketType),
-		fRemoteStr(fRemoteBuffer, kIPAddrBufSize) {}
-	virtual ~TCPSocket() {}
+    //TCPSocket takes an optional task object which will get notified when
+    //certain events happen on this socket. Those events are:
+    //
+    //S_DATA:               Data is currently available on the socket.
+    //S_CONNECTIONCLOSING:  Client is closing the connection. No longer necessary
+    //                      to call Close or Disconnect, Snd & Rcv will fail.
+    TCPSocket(Task *notifytask, UInt32 inSocketType)
+            : Socket(notifytask, inSocketType),
+              fRemoteStr(fRemoteBuffer, kIPAddrBufSize) {}
 
-	//Open
-	OS_Error    Open() { return Socket::Open(SOCK_STREAM); }
+    virtual ~TCPSocket() {}
 
-	// Connect. Attempts to connect to the specified remote host. If this
-	// is a non-blocking socket, this function may return EINPROGRESS, in which
-	// case caller must wait for either an EV_RE or an EV_WR. You may call
-	// CheckAsyncConnect at any time, which will return OS_NoErr if the connect
-	// has completed, EINPROGRESS if it is still in progress, or an appropriate error
-	// if the connect failed.
-	OS_Error    Connect(UInt32 inRemoteAddr, UInt16 inRemotePort);
-	//OS_Error  CheckAsyncConnect();
+    //Open
+    OS_Error Open() { return Socket::Open(SOCK_STREAM); }
 
-	// Basically a copy constructor for this object, also NULLs out the data
-	// in tcpSocket.        
-	void        SnarfSocket(TCPSocket& tcpSocket);
+    // Connect. Attempts to connect to the specified remote host. If this
+    // is a non-blocking socket, this function may return EINPROGRESS, in which
+    // case caller must wait for either an EV_RE or an EV_WR. You may call
+    // CheckAsyncConnect at any time, which will return OS_NoErr if the connect
+    // has completed, EINPROGRESS if it is still in progress, or an appropriate error
+    // if the connect failed.
+    OS_Error Connect(UInt32 inRemoteAddr, UInt16 inRemotePort);
+    //OS_Error  CheckAsyncConnect();
 
-	//ACCESSORS:
-	//Returns NULL if not currently available.
+    // Basically a copy constructor for this object, also NULLs out the data
+    // in tcpSocket.
+    void SnarfSocket(TCPSocket &tcpSocket);
 
-	UInt32      GetRemoteAddr() const
-	{ return ntohl(fRemoteAddr.sin_addr.s_addr); }
-	UInt16      GetRemotePort() const
-	{ return ntohs(fRemoteAddr.sin_port); }
-	//This function is NOT thread safe!
-	StrPtrLen*  GetRemoteAddrStr();
+    //ACCESSORS:
+    //Returns NULL if not currently available.
+
+    UInt32 GetRemoteAddr() const { return ntohl(fRemoteAddr.sin_addr.s_addr); }
+
+    UInt16 GetRemotePort() const { return ntohs(fRemoteAddr.sin_port); }
+
+    //This function is NOT thread safe!
+    StrPtrLen *GetRemoteAddrStr();
 
 protected:
 
-	void        Set(int inSocket, struct sockaddr_in* remoteaddr);
+    void Set(int inSocket, struct sockaddr_in *remoteaddr);
 
-	enum
-	{
-		kIPAddrBufSize = 20 //UInt32
-	};
+    enum {
+        kIPAddrBufSize = 20 //UInt32
+    };
 
-	struct sockaddr_in  fRemoteAddr;
-	char fRemoteBuffer[kIPAddrBufSize];
-	StrPtrLen fRemoteStr;
+    struct sockaddr_in fRemoteAddr;
+    char fRemoteBuffer[kIPAddrBufSize];
+    StrPtrLen fRemoteStr;
 
 
-	friend class TCPListenerSocket;
+    friend class TCPListenerSocket;
 };
+
 #endif // __TCPSOCKET_H__
 

@@ -50,7 +50,7 @@ int easy_gettimeofday(struct timeval *tv)
 {
         u_int64_t tick = 0;
 
-        // TSCÆ«ÒÆ´óÓÚÕâ¸öÖµ£¬¾ÍĞèÒªÖØĞÂ»ñµÃÏµÍ³Ê±¼ä
+        // TSCåç§»å¤§äºè¿™ä¸ªå€¼ï¼Œå°±éœ€è¦é‡æ–°è·å¾—ç³»ç»Ÿæ—¶é—´
         static unsigned int max_ticks = 80000000;
 		rdtscll(tick);
         if(walltime.tv_sec==0 || cpuspeed_mhz==0 ||
