@@ -46,61 +46,58 @@ UInt32                    RTSPSessionInterface::sOptionsRequestBody[kMaxRandomDa
 
 QTSSAttrInfoDict::AttrInfo  RTSPSessionInterface::sAttributes[] =
         {   /*fields:   fAttrName, fFuncPtr, fAttrDataType, fAttrPermission */
-                /* 0 */ {"qtssRTSPSesID",                  nullptr,     qtssAttrDataTypeUInt32,
-                                                                                                        qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe},
+                /* 0 */
+                {"qtssRTSPSesID",                  nullptr,     qtssAttrDataTypeUInt32,         qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe},
                 /* 1 */
-                        {"qtssRTSPSesLocalAddr",           SetupParams, qtssAttrDataTypeUInt32,         qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe |
-                                                                                                        qtssAttrModeCacheable},
+                {"qtssRTSPSesLocalAddr",           SetupParams, qtssAttrDataTypeUInt32,         qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe |
+                                                                                                qtssAttrModeCacheable},
                 /* 2 */
-                        {"qtssRTSPSesLocalAddrStr",        SetupParams, qtssAttrDataTypeCharArray,      qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe |
-                                                                                                        qtssAttrModeCacheable},
+                {"qtssRTSPSesLocalAddrStr",        SetupParams, qtssAttrDataTypeCharArray,      qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe |
+                                                                                                qtssAttrModeCacheable},
                 /* 3 */
-                        {"qtssRTSPSesLocalDNS",            SetupParams, qtssAttrDataTypeCharArray,      qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe |
-                                                                                                        qtssAttrModeCacheable},
+                {"qtssRTSPSesLocalDNS",            SetupParams, qtssAttrDataTypeCharArray,      qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe |
+                                                                                                qtssAttrModeCacheable},
                 /* 4 */
-                        {"qtssRTSPSesRemoteAddr",          SetupParams, qtssAttrDataTypeUInt32,         qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe |
-                                                                                                        qtssAttrModeCacheable},
+                {"qtssRTSPSesRemoteAddr",          SetupParams, qtssAttrDataTypeUInt32,         qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe |
+                                                                                                qtssAttrModeCacheable},
                 /* 5 */
-                        {"qtssRTSPSesRemoteAddrStr",       SetupParams, qtssAttrDataTypeCharArray,      qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe |
-                                                                                                        qtssAttrModeCacheable},
+                {"qtssRTSPSesRemoteAddrStr",       SetupParams, qtssAttrDataTypeCharArray,      qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe |
+                                                                                                qtssAttrModeCacheable},
                 /* 6 */
-                        {"qtssRTSPSesEventCntxt",          nullptr,     qtssAttrDataTypeUInt32,         qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe},
+                {"qtssRTSPSesEventCntxt",          nullptr,     qtssAttrDataTypeUInt32,         qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe},
                 /* 7 */
-                        {"qtssRTSPSesType",                nullptr,     qtssAttrDataTypeUInt32,         qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe},
+                {"qtssRTSPSesType",                nullptr,     qtssAttrDataTypeUInt32,         qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe},
                 /* 8 */
-                        {"qtssRTSPSesStreamRef",           nullptr,     qtssAttrDataTypeQTSS_StreamRef, qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe},
-
+                {"qtssRTSPSesStreamRef",           nullptr,     qtssAttrDataTypeQTSS_StreamRef, qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe},
                 /* 9 */
-                        {"qtssRTSPSesLastUserName",        nullptr,     qtssAttrDataTypeCharArray,      qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe},
+                {"qtssRTSPSesLastUserName",        nullptr,     qtssAttrDataTypeCharArray,      qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe},
                 /* 10 */
-                        {"qtssRTSPSesLastUserPassword",    nullptr,     qtssAttrDataTypeCharArray,      qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe},
+                {"qtssRTSPSesLastUserPassword",    nullptr,     qtssAttrDataTypeCharArray,      qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe},
                 /* 11 */
-                        {"qtssRTSPSesLastURLRealm",        nullptr,     qtssAttrDataTypeCharArray,      qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe},
-
+                {"qtssRTSPSesLastURLRealm",        nullptr,     qtssAttrDataTypeCharArray,      qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe},
                 /* 12 */
-                        {"qtssRTSPSesLocalPort",           SetupParams, qtssAttrDataTypeUInt16,         qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe |
-                                                                                                        qtssAttrModeCacheable},
+                {"qtssRTSPSesLocalPort",           SetupParams, qtssAttrDataTypeUInt16,         qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe |
+                                                                                                qtssAttrModeCacheable},
                 /* 13 */
-                        {"qtssRTSPSesRemotePort",          SetupParams, qtssAttrDataTypeUInt16,         qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe |
-                                                                                                        qtssAttrModeCacheable},
-
+                {"qtssRTSPSesRemotePort",          SetupParams, qtssAttrDataTypeUInt16,         qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe |
+                                                                                                qtssAttrModeCacheable},
                 /* 14 */
-                        {"qtssRTSPSesLastDigestChallenge", nullptr,     qtssAttrDataTypeCharArray,      qtssAttrModeRead |
-                                                                                                        qtssAttrModePreempSafe}
+                {"qtssRTSPSesLastDigestChallenge", nullptr,     qtssAttrDataTypeCharArray,      qtssAttrModeRead |
+                                                                                                qtssAttrModePreempSafe}
 
 
         };
@@ -125,7 +122,7 @@ void RTSPSessionInterface::Initialize()
 RTSPSessionInterface::RTSPSessionInterface()
         : QTSSDictionary(QTSSDictionaryMap::GetMap(QTSSDictionaryMap::kRTSPSessionDictIndex)),
           Task(),
-          // 对应于配置文件中的real_rtsp_timeout,缺省值为 180
+        // 对应于配置文件中的real_rtsp_timeout,缺省值为 180
           fTimeoutTask(nullptr, QTSServerInterface::GetServer()->GetPrefs()->GetRTSPSessionTimeoutInSecs() * 1000),
           fInputStream(&fSocket),
           fOutputStream(&fSocket, &fTimeoutTask),

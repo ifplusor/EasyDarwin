@@ -167,7 +167,7 @@ protected:
     char fUserPasswordBuf[kMaxUserPasswordLen];
     char fUserRealmBuf[kMaxUserRealmLen];
 
-    TimeoutTask fTimeoutTask;//allows the session to be timed out
+    TimeoutTask fTimeoutTask;  // allows the session to be timed out
 
     RTSPRequestStream fInputStream;
     RTSPResponseStream fOutputStream;

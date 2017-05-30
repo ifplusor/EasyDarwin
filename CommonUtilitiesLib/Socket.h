@@ -53,7 +53,7 @@ public:
     enum {
         // Pass this in on socket constructors to specify whether the
         // socket should be non-blocking or blocking
-                kNonBlockingSocketType = 1
+        kNonBlockingSocketType = 1
     };
 
     // This class provides a global event thread.

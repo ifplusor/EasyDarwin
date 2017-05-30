@@ -217,10 +217,10 @@ private:
 
         // states that RTSP sessions that setup RTSP
         // through HTTP tunnels pass through
-                kWaitingToBindHTTPTunnel = 10,                  // POST or GET side waiting to be joined with it's matching half
-        kSocketHasBeenBoundIntoHTTPTunnel = 11,         // POST side after attachment by GET side ( its dying )
-        kHTTPFilteringRequest = 12,                     // after kReadingRequest, enter this state
-        kReadingFirstRequest = 13,                      // initial state - the only time we look for an HTTP tunnel
+        kWaitingToBindHTTPTunnel = 10,              // POST or GET side waiting to be joined with it's matching half
+        kSocketHasBeenBoundIntoHTTPTunnel = 11,     // POST side after attachment by GET side ( its dying )
+        kHTTPFilteringRequest = 12,                 // after kReadingRequest, enter this state
+        kReadingFirstRequest = 13,                  // initial state - the only time we look for an HTTP tunnel
         kHaveNonTunnelMessage = 14                  // we've looked at the message, and its not an HTTP tunnle message
     };
 

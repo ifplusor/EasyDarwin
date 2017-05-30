@@ -22,22 +22,22 @@
  * @APPLE_LICENSE_HEADER_END@
  *
  */
- /*
-	 File:       RTSPRequestInterface.h
+/*
+    File:       RTSPRequestInterface.h
 
-	 Contains:   Provides a simple API for modules to access request information and
-				 manipulate (and possibly send) the client response.
+    Contains:   Provides a simple API for modules to access request information and
+                manipulate (and possibly send) the client response.
 
-				 Implements the RTSP Request dictionary for QTSS API.
+                Implements the RTSP Request dictionary for QTSS API.
 
 
- */
+*/
 
 
 #ifndef __RTSPREQUESTINTERFACE_H__
 #define __RTSPREQUESTINTERFACE_H__
 
- //INCLUDES:
+//INCLUDES:
 #include "QTSS.h"
 #include "QTSSDictionary.h"
 
@@ -47,295 +47,338 @@
 #include "RTSPProtocol.h"
 #include "QTSSUserProfile.h"
 
-class RTSPRequestInterface : public QTSSDictionary
-{
+class RTSPRequestInterface : public QTSSDictionary {
 public:
 
-	//Initialize
-	//Call initialize before instantiating this class. For maximum performance, this class builds
-	//any response header it can at startup time.
-	static void         Initialize();
-	void ReInit(RTSPSessionInterface *session);
+    //Initialize
+    //Call initialize before instantiating this class. For maximum performance, this class builds
+    //any response header it can at startup time.
+    static void Initialize();
 
-	//CONSTRUCTOR:
-	RTSPRequestInterface(RTSPSessionInterface *session);
-	virtual ~RTSPRequestInterface()
-	{
-		if (fMovieFolderPtr != &fMovieFolderPath[0]) delete[] fMovieFolderPtr;
-	}
+    void ReInit(RTSPSessionInterface *session);
 
-	//FUNCTIONS FOR SENDING OUTPUT:
+    //CONSTRUCTOR:
+    RTSPRequestInterface(RTSPSessionInterface *session);
 
-	//Adds a new header to this object's list of headers to be sent out.
-	//Note that this is only needed for "special purpose" headers. The Server,
-	//CSeq, SessionID, and Connection headers are taken care of automatically
-	void    AppendHeader(QTSS_RTSPHeader inHeader, StrPtrLen* inValue);
+    virtual ~RTSPRequestInterface()
+    {
+        if (fMovieFolderPtr != &fMovieFolderPath[0]) delete[] fMovieFolderPtr;
+    }
 
+    //FUNCTIONS FOR SENDING OUTPUT:
 
-	// The transport header constructed by this function mimics the one sent
-	// by the client, with the addition of server port & interleaved sub headers
-	void    AppendTransportHeader(StrPtrLen* serverPortA,
-		StrPtrLen* serverPortB,
-		StrPtrLen* channelA,
-		StrPtrLen* channelB,
-		StrPtrLen* serverIPAddr = NULL,
-		StrPtrLen* ssrc = NULL);
-	void    AppendContentBaseHeader(StrPtrLen* theURL);
-	void    AppendRTPInfoHeader(QTSS_RTSPHeader inHeader,
-		StrPtrLen* url, StrPtrLen* seqNumber,
-		StrPtrLen* ssrc, StrPtrLen* rtpTime, bool lastRTPInfo);
-
-	void    AppendContentLength(UInt32 contentLength);
-	void    AppendDateAndExpires();
-	void    AppendSessionHeaderWithTimeout(StrPtrLen* inSessionID, StrPtrLen* inTimeout);
-	void    AppendRetransmitHeader(UInt32 inAckTimeout);
-
-	// MODIFIERS
-
-	void SetKeepAlive(bool newVal) { fResponseKeepAlive = newVal; }
-
-	//SendHeader:
-	//Sends the RTSP headers, in their current state, to the client.
-	void SendHeader();
-
-	// QTSS STREAM FUNCTIONS
-
-	// THE FIRST ENTRY OF THE IOVEC MUST BE BLANK!!!
-	virtual QTSS_Error WriteV(iovec* inVec, UInt32 inNumVectors, UInt32 inTotalLength, UInt32* outLenWritten);
-
-	//Write
-	//A "buffered send" that can be used for sending small chunks of data at a time.
-	virtual QTSS_Error Write(void* inBuffer, UInt32 inLength, UInt32* outLenWritten, UInt32 inFlags);
-
-	// Flushes all currently buffered data to the network. This either returns
-	// QTSS_NoErr or EWOULDBLOCK. If it returns EWOULDBLOCK, you should wait for
-	// a EV_WR on the socket, and call flush again.
-	virtual QTSS_Error  Flush() { return fOutputStream->Flush(); }
-
-	// Reads data off the stream. Same behavior as calling RTSPSessionInterface::Read
-	virtual QTSS_Error Read(void* ioBuffer, UInt32 inLength, UInt32* outLenRead)
-	{
-		return fSession->Read(ioBuffer, inLength, outLenRead);
-	}
-
-	// Requests an event. Same behavior as calling RTSPSessionInterface::RequestEvent
-	virtual QTSS_Error RequestEvent(QTSS_EventType inEventMask)
-	{
-		return fSession->RequestEvent(inEventMask);
-	}
+    //Adds a new header to this object's list of headers to be sent out.
+    //Note that this is only needed for "special purpose" headers. The Server,
+    //CSeq, SessionID, and Connection headers are taken care of automatically
+    void AppendHeader(QTSS_RTSPHeader inHeader, StrPtrLen *inValue);
 
 
-	//ACCESS FUNCTIONS:
+    // The transport header constructed by this function mimics the one sent
+    // by the client, with the addition of server port & interleaved sub headers
+    void AppendTransportHeader(StrPtrLen *serverPortA,
+                               StrPtrLen *serverPortB,
+                               StrPtrLen *channelA,
+                               StrPtrLen *channelB,
+                               StrPtrLen *serverIPAddr = NULL,
+                               StrPtrLen *ssrc = NULL);
 
-	// These functions are shortcuts that objects internal to the server
-	// use to get access to RTSP request information. Pretty much all
-	// of this stuff is also available as QTSS API attributes.
+    void AppendContentBaseHeader(StrPtrLen *theURL);
 
-	QTSS_RTSPMethod             GetMethod() const { return fMethod; }
-	QTSS_RTSPStatusCode         GetStatus() const { return fStatus; }
-	bool                      GetResponseKeepAlive() const { return fResponseKeepAlive; }
-	void                        SetResponseKeepAlive(bool keepAlive) { fResponseKeepAlive = keepAlive; }
+    void AppendRTPInfoHeader(QTSS_RTSPHeader inHeader,
+                             StrPtrLen *url, StrPtrLen *seqNumber,
+                             StrPtrLen *ssrc, StrPtrLen *rtpTime, bool lastRTPInfo);
 
-	//will be -1 unless there was a Range header. May have one or two values
-	Float64                     GetStartTime() { return fStartTime; }
-	Float64                     GetStopTime() { return fStopTime; }
+    void AppendContentLength(UInt32 contentLength);
 
-	//
-	// Value of Speed: header in request
-	Float32                     GetSpeed() { return fSpeed; }
+    void AppendDateAndExpires();
 
-	//
-	// Value of late-tolerance field of x-RTP-Options header
-	Float32                     GetLateToleranceInSec() { return fLateTolerance; }
-	StrPtrLen*                  GetLateToleranceStr() { return &fLateToleranceStr; }
+    void AppendSessionHeaderWithTimeout(StrPtrLen *inSessionID, StrPtrLen *inTimeout);
 
-	// these get set if there is a transport header
-	UInt16                      GetClientPortA() { return fClientPortA; }
-	UInt16                      GetClientPortB() { return fClientPortB; }
-	UInt32                      GetDestAddr() { return fDestinationAddr; }
-	UInt32                      GetSourceAddr() { return fSourceAddr; }
-	UInt16                      GetTtl() { return fTtl; }
-	QTSS_RTPTransportType       GetTransportType() { return fTransportType; }
-	QTSS_RTPNetworkMode         GetNetworkMode() { return fNetworkMode; }
-	UInt32                      GetWindowSize() { return fWindowSize; }
+    void AppendRetransmitHeader(UInt32 inAckTimeout);
+
+    // MODIFIERS
+
+    void SetKeepAlive(bool newVal) { fResponseKeepAlive = newVal; }
+
+    //SendHeader:
+    //Sends the RTSP headers, in their current state, to the client.
+    void SendHeader();
+
+    // QTSS STREAM FUNCTIONS
+
+    // THE FIRST ENTRY OF THE IOVEC MUST BE BLANK!!!
+    virtual QTSS_Error WriteV(iovec *inVec, UInt32 inNumVectors, UInt32 inTotalLength, UInt32 *outLenWritten);
+
+    //Write
+    //A "buffered send" that can be used for sending small chunks of data at a time.
+    virtual QTSS_Error Write(void *inBuffer, UInt32 inLength, UInt32 *outLenWritten, UInt32 inFlags);
+
+    // Flushes all currently buffered data to the network. This either returns
+    // QTSS_NoErr or EWOULDBLOCK. If it returns EWOULDBLOCK, you should wait for
+    // a EV_WR on the socket, and call flush again.
+    virtual QTSS_Error Flush() { return fOutputStream->Flush(); }
+
+    // Reads data off the stream. Same behavior as calling RTSPSessionInterface::Read
+    virtual QTSS_Error Read(void *ioBuffer, UInt32 inLength, UInt32 *outLenRead)
+    {
+        return fSession->Read(ioBuffer, inLength, outLenRead);
+    }
+
+    // Requests an event. Same behavior as calling RTSPSessionInterface::RequestEvent
+    virtual QTSS_Error RequestEvent(QTSS_EventType inEventMask)
+    {
+        return fSession->RequestEvent(inEventMask);
+    }
 
 
-	bool                      HasResponseBeenSent()
-	{
-		return fOutputStream->GetBytesWritten() > 0;
-	}
+    //ACCESS FUNCTIONS:
 
-	RTSPSessionInterface*       GetSession() { return fSession; }
-	QTSSDictionary*             GetHeaderDictionary() { return &fHeaderDictionary; }
+    // These functions are shortcuts that objects internal to the server
+    // use to get access to RTSP request information. Pretty much all
+    // of this stuff is also available as QTSS API attributes.
 
-	bool                      GetAllowed() { return fAllowed; }
-	void                        SetAllowed(bool allowed) { fAllowed = allowed; }
+    QTSS_RTSPMethod GetMethod() const { return fMethod; }
 
-	bool                      GetHasUser() { return fHasUser; }
-	void                        SetHasUser(bool hasUser) { fHasUser = hasUser; }
+    QTSS_RTSPStatusCode GetStatus() const { return fStatus; }
 
-	bool                      GetAuthHandled() { return fAuthHandled; }
-	void                        SetAuthHandled(bool handled) { fAuthHandled = handled; }
+    bool GetResponseKeepAlive() const { return fResponseKeepAlive; }
 
-	QTSS_ActionFlags            GetAction() { return fAction; }
-	void                        SetAction(QTSS_ActionFlags action) { fAction = action; }
+    void SetResponseKeepAlive(bool keepAlive) { fResponseKeepAlive = keepAlive; }
 
-	bool						IsPushRequest() { return (fTransportMode == qtssRTPTransportModeRecord) ? true : false; }
-	UInt16                      GetSetUpServerPort() { return fSetUpServerPort; }
-	QTSS_RTPTransportMode       GetTransportMode() { return fTransportMode; }
+    //will be -1 unless there was a Range header. May have one or two values
+    Float64 GetStartTime() { return fStartTime; }
 
-	QTSS_AuthScheme             GetAuthScheme() { return fAuthScheme; }
-	void                        SetAuthScheme(QTSS_AuthScheme scheme) { fAuthScheme = scheme; }
-	StrPtrLen*                  GetAuthRealm() { return &fAuthRealm; }
-	StrPtrLen*                  GetAuthNonce() { return &fAuthNonce; }
-	StrPtrLen*                  GetAuthUri() { return &fAuthUri; }
-	UInt32                      GetAuthQop() { return fAuthQop; }
-	StrPtrLen*                  GetAuthNonceCount() { return &fAuthNonceCount; }
-	StrPtrLen*                  GetAuthCNonce() { return &fAuthCNonce; }
-	StrPtrLen*                  GetAuthResponse() { return &fAuthResponse; }
-	StrPtrLen*                  GetAuthOpaque() { return &fAuthOpaque; }
-	QTSSUserProfile*            GetUserProfile() { return fUserProfilePtr; }
+    Float64 GetStopTime() { return fStopTime; }
 
-	bool                      GetStale() { return fStale; }
-	void                        SetStale(bool stale) { fStale = stale; }
+    //
+    // Value of Speed: header in request
+    Float32 GetSpeed() { return fSpeed; }
 
-	bool                      SkipAuthorization() { return fSkipAuthorization; }
+    //
+    // Value of late-tolerance field of x-RTP-Options header
+    Float32 GetLateToleranceInSec() { return fLateTolerance; }
 
-	SInt32                      GetDynamicRateState() { return fEnableDynamicRateState; }
+    StrPtrLen *GetLateToleranceStr() { return &fLateToleranceStr; }
 
-	// DJM PROTOTYPE
-	UInt32						GetRandomDataSize() { return fRandomDataSize; }
+    // these get set if there is a transport header
+    UInt16 GetClientPortA() { return fClientPortA; }
 
-	UInt32                      GetBandwidthHeaderBits() { return fBandwidthBits; }
+    UInt16 GetClientPortB() { return fClientPortB; }
 
-	StrPtrLen*                  GetRequestChallenge() { return &fAuthDigestChallenge; }
+    UInt32 GetDestAddr() { return fDestinationAddr; }
+
+    UInt32 GetSourceAddr() { return fSourceAddr; }
+
+    UInt16 GetTtl() { return fTtl; }
+
+    QTSS_RTPTransportType GetTransportType() { return fTransportType; }
+
+    QTSS_RTPNetworkMode GetNetworkMode() { return fNetworkMode; }
+
+    UInt32 GetWindowSize() { return fWindowSize; }
+
+
+    bool HasResponseBeenSent()
+    {
+        return fOutputStream->GetBytesWritten() > 0;
+    }
+
+    RTSPSessionInterface *GetSession() { return fSession; }
+
+    QTSSDictionary *GetHeaderDictionary() { return &fHeaderDictionary; }
+
+    bool GetAllowed() { return fAllowed; }
+
+    void SetAllowed(bool allowed) { fAllowed = allowed; }
+
+    bool GetHasUser() { return fHasUser; }
+
+    void SetHasUser(bool hasUser) { fHasUser = hasUser; }
+
+    bool GetAuthHandled() { return fAuthHandled; }
+
+    void SetAuthHandled(bool handled) { fAuthHandled = handled; }
+
+    QTSS_ActionFlags GetAction() { return fAction; }
+
+    void SetAction(QTSS_ActionFlags action) { fAction = action; }
+
+    bool IsPushRequest() { return (fTransportMode == qtssRTPTransportModeRecord) ? true : false; }
+
+    UInt16 GetSetUpServerPort() { return fSetUpServerPort; }
+
+    QTSS_RTPTransportMode GetTransportMode() { return fTransportMode; }
+
+    QTSS_AuthScheme GetAuthScheme() { return fAuthScheme; }
+
+    void SetAuthScheme(QTSS_AuthScheme scheme) { fAuthScheme = scheme; }
+
+    StrPtrLen *GetAuthRealm() { return &fAuthRealm; }
+
+    StrPtrLen *GetAuthNonce() { return &fAuthNonce; }
+
+    StrPtrLen *GetAuthUri() { return &fAuthUri; }
+
+    UInt32 GetAuthQop() { return fAuthQop; }
+
+    StrPtrLen *GetAuthNonceCount() { return &fAuthNonceCount; }
+
+    StrPtrLen *GetAuthCNonce() { return &fAuthCNonce; }
+
+    StrPtrLen *GetAuthResponse() { return &fAuthResponse; }
+
+    StrPtrLen *GetAuthOpaque() { return &fAuthOpaque; }
+
+    QTSSUserProfile *GetUserProfile() { return fUserProfilePtr; }
+
+    bool GetStale() { return fStale; }
+
+    void SetStale(bool stale) { fStale = stale; }
+
+    bool SkipAuthorization() { return fSkipAuthorization; }
+
+    SInt32 GetDynamicRateState() { return fEnableDynamicRateState; }
+
+    // DJM PROTOTYPE
+    UInt32 GetRandomDataSize() { return fRandomDataSize; }
+
+    UInt32 GetBandwidthHeaderBits() { return fBandwidthBits; }
+
+    StrPtrLen *GetRequestChallenge() { return &fAuthDigestChallenge; }
 
 
 protected:
 
-	//ALL THIS STUFF HERE IS SETUP BY RTSPREQUEST object (derived)
+    //ALL THIS STUFF HERE IS SETUP BY RTSPREQUEST object (derived)
 
-	//REQUEST HEADER DATA
-	enum
-	{
-		kMovieFolderBufSizeInBytes = 256,   //Uint32
-		kMaxFilePathSizeInBytes = 256       //Uint32
-	};
+    //REQUEST HEADER DATA
+    enum {
+        kMovieFolderBufSizeInBytes = 256,   //Uint32
+        kMaxFilePathSizeInBytes = 256       //Uint32
+    };
 
-	QTSS_RTSPMethod             fMethod;            //Method of this request
-	QTSS_RTSPStatusCode         fStatus;            //Current status of this request
-	UInt32                      fRealStatusCode;    //Current RTSP status num of this request
-	bool                      fRequestKeepAlive;  //Does the client want keep-alive?
-	bool                      fResponseKeepAlive; //Are we going to keep-alive?
-	RTSPProtocol::RTSPVersion   fVersion;
+    QTSS_RTSPMethod fMethod;            //Method of this request
+    QTSS_RTSPStatusCode fStatus;            //Current status of this request
+    UInt32 fRealStatusCode;    //Current RTSP status num of this request
+    bool fRequestKeepAlive;  //Does the client want keep-alive?
+    bool fResponseKeepAlive; //Are we going to keep-alive?
+    RTSPProtocol::RTSPVersion fVersion;
 
-	Float64                     fStartTime;         //Range header info: start time
-	Float64                     fStopTime;          //Range header info: stop time
+    Float64 fStartTime;         //Range header info: start time
+    Float64 fStopTime;          //Range header info: stop time
 
-	UInt16                      fClientPortA;       //This is all info that comes out
-	UInt16                      fClientPortB;       //of the Transport: header
-	UInt16                      fTtl;
-	UInt32                      fDestinationAddr;
-	UInt32                      fSourceAddr;
-	QTSS_RTPTransportType       fTransportType;
-	QTSS_RTPNetworkMode         fNetworkMode;
+    UInt16 fClientPortA;       //This is all info that comes out
+    UInt16 fClientPortB;       //of the Transport: header
+    UInt16 fTtl;
+    UInt32 fDestinationAddr;
+    UInt32 fSourceAddr;
+    QTSS_RTPTransportType fTransportType;
+    QTSS_RTPNetworkMode fNetworkMode;
 
-	UInt32                      fContentLength;
-	SInt64                      fIfModSinceDate;
-	Float32                     fSpeed;
-	Float32                     fLateTolerance;
-	StrPtrLen                   fLateToleranceStr;
-	Float32                     fPrebufferAmt;
+    UInt32 fContentLength;
+    SInt64 fIfModSinceDate;
+    Float32 fSpeed;
+    Float32 fLateTolerance;
+    StrPtrLen fLateToleranceStr;
+    Float32 fPrebufferAmt;
 
-	StrPtrLen                   fFirstTransport;
+    StrPtrLen fFirstTransport;
 
-	QTSS_StreamRef              fStreamRef;
+    QTSS_StreamRef fStreamRef;
 
-	//
-	// For reliable UDP
-	UInt32                      fWindowSize;
-	StrPtrLen                   fWindowSizeStr;
+    //
+    // For reliable UDP
+    UInt32 fWindowSize;
+    StrPtrLen fWindowSizeStr;
 
-	//Because of URL decoding issues, we need to make a copy of the file path.
-	//Here is a buffer for it.
-	char                        fFilePath[kMaxFilePathSizeInBytes];
-	char                        fMovieFolderPath[kMovieFolderBufSizeInBytes];
-	char*                       fMovieFolderPtr;
+    //Because of URL decoding issues, we need to make a copy of the file path.
+    //Here is a buffer for it.
+    char fFilePath[kMaxFilePathSizeInBytes];
+    char fMovieFolderPath[kMovieFolderBufSizeInBytes];
+    char *fMovieFolderPtr;
 
-	QTSSDictionary              fHeaderDictionary;
+    QTSSDictionary fHeaderDictionary;
 
-	bool                      fAllowed;
-	bool                      fHasUser;
-	bool                      fAuthHandled;
+    bool fAllowed;
+    bool fHasUser;
+    bool fAuthHandled;
 
-	QTSS_RTPTransportMode       fTransportMode;
-	UInt16                      fSetUpServerPort;           //send this back as the server_port if is SETUP request
+    QTSS_RTPTransportMode fTransportMode;
+    UInt16 fSetUpServerPort;           //send this back as the server_port if is SETUP request
 
-	QTSS_ActionFlags            fAction;    // The action that will be performed for this request
-											// Set to a combination of QTSS_ActionFlags 
+    QTSS_ActionFlags fAction;    // The action that will be performed for this request
+    // Set to a combination of QTSS_ActionFlags
 
-	QTSS_AuthScheme             fAuthScheme;
-	StrPtrLen                   fAuthRealm;
-	StrPtrLen                   fAuthNonce;
-	StrPtrLen                   fAuthUri;
-	UInt32                      fAuthQop;
-	StrPtrLen                   fAuthNonceCount;
-	StrPtrLen                   fAuthCNonce;
-	StrPtrLen                   fAuthResponse;
-	StrPtrLen                   fAuthOpaque;
-	QTSSUserProfile             fUserProfile;
-	QTSSUserProfile*            fUserProfilePtr;
-	bool                      fStale;
+    QTSS_AuthScheme fAuthScheme;
+    StrPtrLen fAuthRealm;
+    StrPtrLen fAuthNonce;
+    StrPtrLen fAuthUri;
+    UInt32 fAuthQop;
+    StrPtrLen fAuthNonceCount;
+    StrPtrLen fAuthCNonce;
+    StrPtrLen fAuthResponse;
+    StrPtrLen fAuthOpaque;
+    QTSSUserProfile fUserProfile;
+    QTSSUserProfile *fUserProfilePtr;
+    bool fStale;
 
-	bool                      fSkipAuthorization;
+    bool fSkipAuthorization;
 
-	SInt32                      fEnableDynamicRateState;
+    SInt32 fEnableDynamicRateState;
 
-	// DJM PROTOTYPE
-	UInt32						fRandomDataSize;
+    // DJM PROTOTYPE
+    UInt32 fRandomDataSize;
 
-	UInt32                      fBandwidthBits;
-	StrPtrLen                   fAuthDigestChallenge;
-	StrPtrLen                   fAuthDigestResponse;
+    UInt32 fBandwidthBits;
+    StrPtrLen fAuthDigestChallenge;
+    StrPtrLen fAuthDigestResponse;
 private:
 
-	RTSPSessionInterface*   fSession;
-	RTSPResponseStream*     fOutputStream;
+    RTSPSessionInterface *fSession;
+    RTSPResponseStream *fOutputStream;
 
 
-	enum
-	{
-		kStaticHeaderSizeInBytes = 512  //UInt32
-	};
+    enum {
+        kStaticHeaderSizeInBytes = 512  //UInt32
+    };
 
-	bool                  fStandardHeadersWritten;
+    bool fStandardHeadersWritten;
 
-	void                    PutTransportStripped(StrPtrLen &outFirstTransport, StrPtrLen &outResultStr);
-	void                    WriteStandardHeaders();
-	static void             PutStatusLine(StringFormatter* putStream,
-		QTSS_RTSPStatusCode status,
-		RTSPProtocol::RTSPVersion version);
+    void PutTransportStripped(StrPtrLen &outFirstTransport, StrPtrLen &outResultStr);
 
-	//Individual param retrieval functions
-	static void*        GetAbsTruncatedPath(QTSSDictionary* inRequest, UInt32* outLen);
-	static void*        GetTruncatedPath(QTSSDictionary* inRequest, UInt32* outLen);
-	static void*        GetFileName(QTSSDictionary* inRequest, UInt32* outLen);
-	static void*        GetFileDigit(QTSSDictionary* inRequest, UInt32* outLen);
-	static void*        GetRealStatusCode(QTSSDictionary* inRequest, UInt32* outLen);
-	static void*		GetLocalPath(QTSSDictionary* inRequest, UInt32* outLen);
-	static void* 		GetAuthDigestResponse(QTSSDictionary* inRequest, UInt32* outLen);
+    void WriteStandardHeaders();
 
-	//optimized preformatted response header strings
-	static char             sPremadeHeader[kStaticHeaderSizeInBytes];
-	static StrPtrLen        sPremadeHeaderPtr;
+    static void PutStatusLine(StringFormatter *putStream,
+                              QTSS_RTSPStatusCode status,
+                              RTSPProtocol::RTSPVersion version);
 
-	static char             sPremadeNoHeader[kStaticHeaderSizeInBytes];
-	static StrPtrLen        sPremadeNoHeaderPtr;
+    //Individual param retrieval functions
+    static void *GetAbsTruncatedPath(QTSSDictionary *inRequest, UInt32 *outLen);
 
-	static StrPtrLen        sColonSpace;
+    static void *GetTruncatedPath(QTSSDictionary *inRequest, UInt32 *outLen);
 
-	//Dictionary support
-	static QTSSAttrInfoDict::AttrInfo   sAttributes[];
+    static void *GetFileName(QTSSDictionary *inRequest, UInt32 *outLen);
+
+    static void *GetFileDigit(QTSSDictionary *inRequest, UInt32 *outLen);
+
+    static void *GetRealStatusCode(QTSSDictionary *inRequest, UInt32 *outLen);
+
+    static void *GetLocalPath(QTSSDictionary *inRequest, UInt32 *outLen);
+
+    static void *GetAuthDigestResponse(QTSSDictionary *inRequest, UInt32 *outLen);
+
+    //optimized preformatted response header strings
+    static char sPremadeHeader[kStaticHeaderSizeInBytes];
+    static StrPtrLen sPremadeHeaderPtr;
+
+    static char sPremadeNoHeader[kStaticHeaderSizeInBytes];
+    static StrPtrLen sPremadeNoHeaderPtr;
+
+    static StrPtrLen sColonSpace;
+
+    //Dictionary support
+    static QTSSAttrInfoDict::AttrInfo sAttributes[];
 };
+
 #endif // __RTSPREQUESTINTERFACE_H__
 

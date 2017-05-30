@@ -84,8 +84,7 @@ public:
     //This call can only be made during an RTSP Setup request, and the
     //RTSPRequestInterface must be provided.
     //You may also opt to attach a codec name and type to this stream.
-    QTSS_Error AddStream(RTSPRequestInterface *request, RTPStream **outStream,
-                         QTSS_AddStreamFlags inFlags);
+    QTSS_Error AddStream(RTSPRequestInterface *request, RTPStream **outStream, QTSS_AddStreamFlags inFlags);
 
     //Reset the thinning params for all streams using the late tolerance value
     void SetStreamThinningParams(Float32 inLateTolerance);

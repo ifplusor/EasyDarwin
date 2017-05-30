@@ -240,16 +240,18 @@ SInt64 RTSPSession::Run()
         switch (fState) {
             case kReadingFirstRequest:  // 初始状态
             {
-                // 返回QTSS_NoErr意味着所有数据已经从Socket中读出,但尚不能构成一个完整
-                // 的请求,因此必须等待更多的数据到达
-                // 我们从ReadRequest代码可以知道,只有当对socket端口recv返回EAGAIN时,
-                // ReadRequest才会返回QTSS_NoErr。
+                // 从 Socket 中读取数据，并校验格式
                 if ((err = fInputStream.ReadRequest()) == QTSS_NoErr) {
+                    // 返回 QTSS_NoErr 意味着所有数据已经从 Socket 中读出,但尚不能构成一个完整
+                    // 的请求,因此必须等待更多的数据到达,
+                    // 我们从 ReadRequest 代码可以知道,只有当对 socket 端口 recv 返回 EAGAIN 时,
+                    // ReadRequest 才会返回 QTSS_NoErr。
+
                     // If the RequestStream returns QTSS_NoErr, it means
                     // that we've read all outstanding data off the socket,
                     // and still don't have a full request. Wait for more data.
 
-                    //+rt use the socket that reads the data, may be different now.
+                    // +rt use the socket that reads the data, may be different now.
                     fInputSocketP->RequestEvent(EV_RE);  // 重新申请监听
                     return 0;
                 }
@@ -315,7 +317,6 @@ SInt64 RTSPSession::Run()
                 HTTP_TRACE("RTSPSession has died of snarfage.\n")
                 break;
 
-
             case kReadingRequest: {
                 // 类似于 kReadingFirstRequest,如果socket有数据则将fState设为
                 // kHaveNonTunnelMessage,否则则调用RequestEvent继续申请监听。
@@ -366,7 +367,7 @@ SInt64 RTSPSession::Run()
                 Assert(fInputStream.GetRequestBuffer());
 
                 if (fRequest == nullptr) {
-                    //                    printf("RTSPRequest size########## %d\n",sizeof(RTSPRequest));
+                    //printf("RTSPRequest size########## %d\n",sizeof(RTSPRequest));
                     fRequest = new RTSPRequest(this);
                 }
                 fRequest->ReInit(this);
@@ -394,8 +395,7 @@ SInt64 RTSPSession::Run()
 
                 // Check for an overfilled buffer, and return an error.
                 if (err == E2BIG) {
-                    (void) QTSSModuleUtils::SendErrorResponse(fRequest, qtssClientBadRequest,
-                                                              qtssMsgRequestTooLong);
+                    (void) QTSSModuleUtils::SendErrorResponse(fRequest, qtssClientBadRequest, qtssMsgRequestTooLong);
                     fState = kPostProcessingRequest;
                     break;
                 }
@@ -415,18 +415,22 @@ SInt64 RTSPSession::Run()
             }
 
             case kFilteringRequest: {
-                // 调用已注册QTSS_RTSPFilter_Role模块的处理函数(系统的QTSSRelayModule模块、
-                // QTSSMP3StreamingModule模块(Handle ShoutCast/IceCast-style MP3
-                // streaming.)、QTSSRefMovieModule模块(A module that serves an
-                // RTSP text ref movie from an HTTP request.)、QTSSAdminModule模块(A module
-                // that uses the information available in the server to present a web page
-                // containing that information.)、QTSSWebStatsModule模块(A module that uses
-                // the stats information available in the server to present a web page
-                // containing that information.)、QTSSWebDebugModule模块(A module that uses
-                // the debugging information available in the server to present a web page
-                // containing that information.)、QTSSDemoSMILModule模块(?)、
-                // QTSSHttpFileModule模块(A module for HTTP file transfer of files and for
-                // on-the-fly ref movie creation.)提供该Role的处理),可以添加二次开发模块!
+                // 调用已注册 QTSS_RTSPFilter_Role 模块的处理函数
+                //
+                // QTSSRelayModule模块、
+                // QTSSMP3StreamingModule 模块 (Handle ShoutCast/IceCast-style MP3 streaming.)、
+                // QTSSRefMovieModule 模块 (A module that serves an RTSP text ref movie from an HTTP request.)、
+                // QTSSAdminModule 模块 (A module that uses the information available in the
+                //   server to present a web page containing that information.)、
+                // QTSSWebStatsModule 模块 (A module that uses the stats information available in
+                //   the server to present a web page containing that information.)、
+                // QTSSWebDebugModule 模块 (A module that uses the debugging information available
+                //   in the server to present a web page containing that information.)、
+                // QTSSDemoSMILModule 模块(?)、
+                // QTSSHttpFileModule 模块 (A module for HTTP file transfer of files and for
+                //   on-the-fly ref movie creation.)
+                //
+                // 可以添加二次开发模块!
 
                 // We received something so auto refresh
                 // The need to auto refresh is because the api doesn't allow a module to refresh at this point
@@ -440,10 +444,10 @@ SInt64 RTSPSession::Run()
 
                 // 在readRequest函数里,只有碰到“$”,才会认为是 interleaved packet
                 if (fInputStream.IsDataPacket()) {
-                    // 在handleIncomingDataPacket里,除了调用RTPSession的
-                    // ProcessIncomingInterleavedData函数外,还会调用已注册
-                    // QTSS_RTSPIncomingData_Role模块的处理函数。(系统的
-                    // QTSSReflectorModule模块提供该Role的处理)
+                    // 在 handleIncomingDataPacket 里,除了调用 RTPSession 的
+                    // ProcessIncomingInterleavedData 函数外,还会调用已注册
+                    // QTSS_RTSPIncomingData_Role 模块的处理函数。(系统的
+                    // QTSSReflectorModule 模块提供该 Role 的处理)
                     // 这里可以进行二次开发!
                     this->HandleIncomingDataPacket();
 
@@ -478,13 +482,13 @@ SInt64 RTSPSession::Run()
                     fModuleState.isGlobalLocked = false;
 
                     // If this module has requested an event, return and wait for the event to transpire
-                    if (fModuleState.globalLockRequested) // call this request back locked
+                    if (fModuleState.globalLockRequested)  // call this request back locked
                         return this->CallLocked();
 
                     if (fModuleState.eventRequested) {
-                        this->ForceSameThread();    // We are holding mutexes, so we need to force
+                        this->ForceSameThread();  // We are holding mutexes, so we need to force
                         // the same thread to be used for next Run()
-                        return fModuleState.idleTime; // If the module has requested idle time...
+                        return fModuleState.idleTime;  // If the module has requested idle time...
                     }
 
                     //
@@ -528,8 +532,11 @@ SInt64 RTSPSession::Run()
                 fState = kRoutingRequest;
             }
             case kRoutingRequest: {
-                // 调用注册了QTSS_RTSPRoute_Role处理的模块的处理函数(系统的QTSSRelayModule模块、
-                // QTSSReflectorModule模块、QTSSHomeDirectoryModule模块提供了该Role的处理)。
+                // 调用注册了 QTSS_RTSPRoute_Role 处理的模块的处理函数
+                //
+                // QTSSRelayModule模块、
+                // QTSSReflectorModule模块、
+                // QTSSHomeDirectoryModule模块
 
                 // Invoke router modules
                 numModules = QTSServerInterface::GetNumModulesInRole(QTSSModule::kRTSPRouteRole);
@@ -596,13 +603,14 @@ SInt64 RTSPSession::Run()
             }
 
             case kAuthenticatingRequest: {
-                // 调用二次开发的安全模块(QTSS_RTSPAuthenticate_Role),主要用于客户身份验证
-                // 以及其他规则的处理(系统的QTSSAccessModule模块(Module that handles
-                // authentication and authorization independent of the file
-                // system)、QTSSODAuthModule模块(This is a modified version of the
-                // QTSSAccessModule also released with QTSS 2.0. It has been modified to shrink
-                // the linespacing so that the code can fit on slides. Also, this module issues
-                // redirects to an error movie.)提供了该Role的处理)。
+                // 调用二次开发的安全模块(QTSS_RTSPAuthenticate_Role),主要用于客户身份验证以及其他规则的处理
+                //
+                // QTSSAccessModule模块(Module that handles authentication and authorization
+                //   independent of the file system)、
+                // QTSSODAuthModule模块(This is a modified version of the QTSSAccessModule
+                //   also released with QTSS 2.0. It has been modified to shrink the linespacing
+                //   so that the code can fit on slides. Also, this module issues redirects to
+                //   an error movie.)
 
                 bool allowedDefault = QTSServerInterface::GetServer()->GetPrefs()->GetAllowGuestDefault();
                 bool allowed = allowedDefault; //server pref?
@@ -737,16 +745,19 @@ SInt64 RTSPSession::Run()
                 fState = kAuthorizingRequest;
             }
             case kAuthorizingRequest: {
-                // 调用注册QTSS_RTSPAuthorize_Role模块的处理函数,如果失败,则发送回复并跳出
-                // 循环(系统的QTSSSpamDefenseModule模块(Protects the server against denial-
-                // of-service attacks by only allowing X number of RTSP connections from a
-                // certain IP address)、QTSSFilePrivsModule模块(Module that handles and file
-                // system authorization)、QTSSReflectorModule模块、QTSSHomeDirectoryModule模块、
-                // QTSSAccessModule模块、QTSSAdminModule模块、QTSSDemoModule模块(This is a
-                // modified version of the QTSSAccessModule also released with QTSS 2.0. It has
-                // been modified to shrink the linespacing so that the code can fit on slides.
-                // Also, this module issues redirects to an error movie.)、QTSSODAuthModule模块
-                // 提供了该Role的处理)。
+                // 调用注册QTSS_RTSPAuthorize_Role模块的处理函数,如果失败,则发送回复并跳出循环
+                //
+                // QTSSSpamDefenseModule模块(Protects the server against denial-of-service attacks
+                //   by only allowing X number of RTSP connections from a certain IP address)、
+                // QTSSFilePrivsModule模块(Module that handles and file system authorization)、
+                // QTSSReflectorModule模块、
+                // QTSSHomeDirectoryModule模块、
+                // QTSSAccessModule模块、
+                // QTSSAdminModule模块、
+                // QTSSDemoModule模块(This is a modified version of the QTSSAccessModule also released
+                //   with QTSS 2.0. It has been modified to shrink the linespacing so that the code
+                //   can fit on slides. Also, this module issues redirects to an error movie.)、
+                // QTSSODAuthModule模块
 
                 // Invoke authorization modules
                 numModules = QTSServerInterface::GetNumModulesInRole(QTSSModule::kRTSPAuthRole);
@@ -888,13 +899,14 @@ SInt64 RTSPSession::Run()
             }
 
             case kPreprocessingRequest: {
-                // 调用注册QTSS_RTSPPreProcessor_Role模块的处理函数,注意系统也提供了支持这
-                // 些role的模块(系统的QTSSReflectorModule模块、QTSSSplitterModule模块、
+                // 调用注册QTSS_RTSPPreProcessor_Role模块的处理函数,注意系统也提供了支持这些role的模块
+                //
+                // QTSSReflectorModule模块、
+                // QTSSSplitterModule模块、
                 // QTSSRTPFileModule模块(Content source module that uses the QTFileLib to
-                // serve Hinted QuickTime files to clients.)、QTSSRawFileModule模块(A module
-                // that returns the entire contents of a file to the client. Only does this if
-                // the suffix of the file is .raw)提供了该Role的处理)。
-                // 注意:QTSSRTPFileModule和QTSSRawFileModule并没有加载进系统!!!
+                //   serve Hinted QuickTime files to clients.)、
+                // QTSSRawFileModule模块(A module that returns the entire contents of a file
+                //   to the client. Only does this if the suffix of the file is .raw)
 
                 // Invoke preprocessor modules
                 numModules = QTSServerInterface::GetNumModulesInRole(QTSSModule::kRTSPPreProcessorRole);
@@ -942,10 +954,11 @@ SInt64 RTSPSession::Run()
             }
 
             case kProcessingRequest: {
-                // 调用注册QTSS_RTSPRequest_Role模块的处理函数,注意系统也提供了支持这
-                // 些role的模块(系统的QTSSFileModule模块(Content source module that uses the
-                // QTFileLib to serve Hinted QuickTime files to clients.)、QTSSProxyModule模块
-                // 提供了该Role的处理)。
+                // 调用注册QTSS_RTSPRequest_Role模块的处理函数,注意系统也提供了支持这些role的模块
+                //
+                // QTSSFileModule模块(Content source module that uses the QTFileLib to serve
+                //   Hinted QuickTime files to clients.)、
+                // QTSSProxyModule模块
 
                 // If no preprocessor sends a response, move onto the request processing module. It
                 // is ALWAYS supposed to send a response, but if it doesn't, we have a canned error
@@ -998,9 +1011,10 @@ SInt64 RTSPSession::Run()
             }
 
             case kPostProcessingRequest: {
-                // 调用注册QTSS_RTSPPostProcessor_Role模块的处理函数,注意系统也提供了支持这
-                // 些role的模块(系统的QTSSRelayModule模块、QTSSAccessLogModule模块提供了该
-                // Role的处理)。
+                // 调用注册QTSS_RTSPPostProcessor_Role模块的处理函数,注意系统也提供了支持这些role的模块
+                //
+                // QTSSRelayModule模块、
+                // QTSSAccessLogModule模块`
 
                 // Post process the request *before* sending the response. Therefore, we
                 // will post process regardless of whether the client actually gets our response
@@ -1640,7 +1654,7 @@ bool RTSPSession::ParseOptionsResponse()
 void RTSPSession::SetupRequest()
 {
     // First parse the request
-    // 首先调用fRequest->Parse分析RTSP请求
+    // 首先调用 fRequest->Parse 分析 RTSP 请求
     QTSS_Error theErr = fRequest->Parse();
     if (theErr != QTSS_NoErr)
         return;
@@ -1648,6 +1662,7 @@ void RTSPSession::SetupRequest()
     // let's also refresh RTP session timeout so that it's kept alive in sync with the RTSP session.
     //
     // Attempt to find the RTP session for this request.
+    // 查找该请求的RTPSession
     OSRefTable *theMap = QTSServerInterface::GetServer()->GetRTPSessionMap();
     theErr = this->FindRTPSession(theMap);
 
@@ -1659,20 +1674,18 @@ void RTSPSession::SetupRequest()
         if (headerBits != 0)
             (void) fRTPSession->SetValue(qtssCliSessLastRTSPBandwidth, (UInt32) 0, &headerBits, sizeof(headerBits),
                                          QTSSDictionary::kDontObeyReadOnly);
-
-
     }
     QTSS_RTSPStatusCode statusCode = qtssSuccessOK;
     char *body = nullptr;
     UInt32 bodySizeBytes = 0;
 
+    // 在上面的 Parse 函数里已经调用 RTSPProtocol::GetMethod 设置 fMethod
+
     // If this is an OPTIONS request, don't even bother letting modules see it. Just
     // send a standard OPTIONS response, and be done.
-    // 在上面的Parse函数里已经调用RTSPProtocol::GetMethod设置fMethod
-    // 如果是OPTIONS,将系统支持的方法添加到头部(在DoInitRole里已经把各个模块登记的
-    // 支持方法汇总了)
-    // 注意这里并没有实际的通过socket发送出去,只是和fOutputStream相关联
-    if (fRequest->GetMethod() == qtssOptionsMethod)// OPTIONS请求
+    // OPTIONS请求，简单发回标准OPTIONS响应，将系统支持的方法添加到头部(在DoInitRole里已经把各个模块登记的支持方法汇总了)
+    // 注意:这里并没有实际的通过 socket 发送出去,只是和 fOutputStream 相关联
+    if (fRequest->GetMethod() == qtssOptionsMethod)  // OPTIONS请求
     {
         StrPtrLen *cSeqPtr = fRequest->GetHeaderDictionary()->GetValue(qtssCSeqHeader);
         if (cSeqPtr == nullptr || cSeqPtr->Len == 0) {
@@ -1740,6 +1753,7 @@ void RTSPSession::SetupRequest()
 
     // If this is a DESCRIBE request, make sure there is no SessionID. This is not allowed,
     // and may screw up modules if we let them see this request.
+    // DESCRIBE请求，必须保证已经有了SessionID
     if (fRequest->GetMethod() == qtssDescribeMethod) {
         if (fRequest->GetHeaderDictionary()->GetValue(qtssSessionHeader)->Len > 0) {
             (void) QTSSModuleUtils::SendErrorResponse(fRequest, qtssClientHeaderFieldNotValid,
@@ -1749,6 +1763,7 @@ void RTSPSession::SetupRequest()
     }
 
     // If we don't have an RTP session yet, create one...
+    // 如果未查找到RTPSession，建立一个新的RTPSession
     if (fRTPSession == nullptr) {
         theErr = this->CreateNewRTPSession(theMap);
         if (theErr != QTSS_NoErr)
@@ -1859,7 +1874,7 @@ QTSS_Error RTSPSession::CreateNewRTPSession(OSRefTable *inRefTable)
 
     // First of all, ask the server if it's ok to add a new session
     // 根据几个情况来判断是否可以添加新的RTPSession。
-    // 1、server的状态;2、最大连接数限制;3、最大带宽限制。
+    // 1、server的状态; 2、最大连接数限制; 3、最大带宽限制。
     QTSS_Error theErr = this->IsOkToAddNewRTPSession();
     if (theErr != QTSS_NoErr)
         return theErr;
@@ -1884,14 +1899,9 @@ QTSS_Error RTSPSession::CreateNewRTPSession(OSRefTable *inRefTable)
             // 利用随机数生成SessionID
             fLastRTPSessionIDPtr.Len = this->GenerateNewSessionID(fLastRTPSessionID);
 
-            //ok, some module has bound this session, we can activate it.
-            //At this point, we may find out that this new session ID is a duplicate.
-            //If that's the case, we'll simply retry until we get a unique ID
-            // 该函数执行了以下操作:
-            // 1. 拷贝到fRTSPSessionIDBuf,
-            // 2. puts the session into the RTPSession Map:
-            //    theServer->GetRTPSessionMap()->Register(&fRTPMapElem);
-            // 3. 调用IncrementTotalRTPSessions()
+            // ok, some module has bound this session, we can activate it.
+            // At this point, we may find out that this new session ID is a duplicate.
+            // If that's the case, we'll simply retry until we get a unique ID
             activationError = fRTPSession->Activate(fLastRTPSessionID);
         }
         Assert(activationError == QTSS_NoErr);
@@ -2130,7 +2140,7 @@ void RTSPSession::HandleIncomingDataPacket()
 
     if (theSessionID == nullptr) {
         Assert(0);
-        return;
+        return;  // TODO(james): ?
         theSessionID = &fLastRTPSessionIDPtr;
     }
 

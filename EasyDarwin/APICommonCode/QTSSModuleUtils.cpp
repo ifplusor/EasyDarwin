@@ -69,8 +69,8 @@ void QTSSModuleUtils::Initialize(QTSS_TextMessagesObject inMessages,
     sErrorLog = inErrorLog;
 }
 
-QTSS_Error
-QTSSModuleUtils::ReadEntireFile(char *inPath, StrPtrLen *outData, QTSS_TimeVal inModDate, QTSS_TimeVal *outModDate)
+QTSS_Error QTSSModuleUtils::ReadEntireFile(char *inPath, StrPtrLen *outData, QTSS_TimeVal inModDate,
+                                           QTSS_TimeVal *outModDate)
 {
 #if 0
     QTSS_Object theFileObject = NULL;
@@ -226,10 +226,8 @@ void QTSSModuleUtils::LogPrefErrorStr(QTSS_ErrorVerbosity inVerbosity, char *pre
 }
 
 
-char *QTSSModuleUtils::GetFullPath(QTSS_RTSPRequestObject inRequest,
-                                   QTSS_AttributeID whichFileType,
-                                   UInt32 *outLen,
-                                   StrPtrLen *suffix)
+char *QTSSModuleUtils::GetFullPath(QTSS_RTSPRequestObject inRequest, QTSS_AttributeID whichFileType,
+                                   UInt32 *outLen, StrPtrLen *suffix)
 {
     Assert(outLen != NULL);
 

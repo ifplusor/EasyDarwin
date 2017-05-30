@@ -65,10 +65,10 @@ QTSS_Error RTSPRequestStream::ReadRequest()
     while (true) {
         UInt32 newOffset = 0;
 
-        //If this is the case, we already HAVE a request on this session, and we now are done
-        //with the request and want to move onto the next one. The first thing we should do
-        //is check whether there is any lingering data in the stream. If there is, the parent
-        //session believes that is part of a new request
+        // If this is the case, we already HAVE a request on this session, and we now are done
+        // with the request and want to move onto the next one. The first thing we should do
+        // is check whether there is any lingering data in the stream. If there is, the parent
+        // session believes that is part of a new request
         if (fRequestPtr != NULL) {
             fRequestPtr = NULL;//flag that we no longer have a complete request
 
@@ -193,8 +193,8 @@ QTSS_Error RTSPRequestStream::ReadRequest()
             str.PrintStrEOL("\n\r\n", "\n");// print the request but stop on \n\r\n and add a \n afterwards.
         }
 
-        //use a StringParser object to search for a double EOL, which signifies the end of
-        //the header.
+        // use a StringParser object to search for a double EOL, which signifies the end of
+        // the header.
         bool weAreDone = false;
         StringParser headerParser(&fRequest);
 
@@ -202,9 +202,9 @@ QTSS_Error RTSPRequestStream::ReadRequest()
         while (headerParser.GetThruEOL(NULL)) {
             lcount++;
             if (headerParser.ExpectEOL()) {
-                //The legal end-of-header sequences are \r\r, \r\n\r\n, & \n\n. NOT \r\n\r!
-                //If the packets arrive just a certain way, we could get here with the latter
-                //combo, and not wait for a final \n.
+                // The legal end-of-header sequences are \r\r, \r\n\r\n, & \n\n. NOT \r\n\r!
+                // If the packets arrive just a certain way, we could get here with the latter
+                // combo, and not wait for a final \n.
                 if ((headerParser.GetDataParsedLen() > 2) &&
                     (memcmp(headerParser.GetCurrentPosition() - 3, "\r\n\r", 3) == 0))
                     continue;
@@ -228,7 +228,7 @@ QTSS_Error RTSPRequestStream::ReadRequest()
             }
         }
 
-        //weAreDone means we have gotten a full request
+        // weAreDone means we have gotten a full request
         if (weAreDone) {
             //put back any data that is not part of the header
             fRequest.Len -= headerParser.GetDataRemaining();
@@ -238,7 +238,7 @@ QTSS_Error RTSPRequestStream::ReadRequest()
             return QTSS_RequestArrived;
         }
 
-        //check for a full buffer
+        // check for a full buffer
         if (fCurOffset == kRequestBufferSizeInBytes - 1) {
             fRequestPtr = &fRequest;
             return E2BIG;

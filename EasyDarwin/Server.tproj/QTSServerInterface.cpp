@@ -367,19 +367,21 @@ Float32 RTPStatsUpdaterTask::GetCPUTimeInSeconds()
 
 SInt64 RTPStatsUpdaterTask::Run()
 {
+	// 在运行StartTasks创建RTPStatsUpdaterTask类后,该Run函数就会被调度运行。
+	// 后续通过调用Task::Signal,该函数会被运行。
 
 	QTSServerInterface* theServer = QTSServerInterface::sServer;
 
 	// All of this must happen atomically wrt dictionary values we are manipulating
 	OSMutexLocker locker(&theServer->fMutex);
 
-	//First update total bytes. This must be done because total bytes is a 64 bit number,
-	//so no atomic functions can apply.
+	// First update total bytes. This must be done because total bytes is a 64 bit number,
+	// so no atomic functions can apply.
 	//
-	// NOTE: The line below is not thread safe on non-PowerPC platforms. This is
-	// because the fPeriodicRTPBytes variable is being manipulated from within an
-	// atomic_add. On PowerPC, assignments are atomic, so the assignment below is ok.
-	// On a non-PowerPC platform, the following would be thread safe:
+	//  NOTE: The line below is not thread safe on non-PowerPC platforms. This is
+	//  because the fPeriodicRTPBytes variable is being manipulated from within an
+	//  atomic_add. On PowerPC, assignments are atomic, so the assignment below is ok.
+	//  On a non-PowerPC platform, the following would be thread safe:
 	//unsigned int periodicBytes = atomic_add(&theServer->fPeriodicRTPBytes, 0);-----------
 	unsigned int periodicBytes = theServer->fPeriodicRTPBytes;
 	//(void)atomic_sub(&theServer->fPeriodicRTPBytes, periodicBytes);
@@ -402,10 +404,10 @@ SInt64 RTPStatsUpdaterTask::Run()
 
 	SInt64 curTime = OS::Milliseconds();
 
-	//for cpu percent
+	// for cpu percent
 	Float32 cpuTimeInSec = GetCPUTimeInSeconds();
 
-	//also update current bandwidth statistic
+	// also update current bandwidth statistic
 	if (fLastBandwidthTime != 0)
 	{
 		Assert(curTime > fLastBandwidthTime);
@@ -420,6 +422,7 @@ SInt64 RTPStatsUpdaterTask::Run()
 		UInt32 packetsPerSecond = periodicPackets;
 		UInt32 theTime = delta / 1000;
 
+        // 设置theServer->fRTPPacketsPerSecond.(包流量)
 		packetsPerSecond /= theTime;
 		Assert(packetsPerSecond >= 0);
 		theServer->fRTPPacketsPerSecond = packetsPerSecond;
@@ -427,11 +430,12 @@ SInt64 RTPStatsUpdaterTask::Run()
 		UInt32 headerBits = 8 * additionalBytes;
 		headerBits /= theTime;
 
+        // 设置theServer->fCurrentRTPBandwidthInBits.(字节流量)
 		Float32 bits = periodicBytes * 8;
 		bits /= theTime;
 		theServer->fCurrentRTPBandwidthInBits = (UInt32)(bits + headerBits);
 
-		//do the computation for cpu percent
+		// do the computation for cpu percent, 设置theServer->fCPUPercent.
 		Float32 diffTime = cpuTimeInSec - theServer->fCPUTimeUsedInSec;
 		theServer->fCPUPercent = (diffTime / theTime) * 100;
 
@@ -441,12 +445,12 @@ SInt64 RTPStatsUpdaterTask::Run()
 			theServer->fCPUPercent /= numProcessors;
 	}
 
-	//for cpu percent
+	// for cpu percent
 	theServer->fCPUTimeUsedInSec = cpuTimeInSec;
 
-	//also compute average bandwidth, a much more smooth value. This is done with
-	//the fLastBandwidthAvg, a timestamp of the last time we did an average, and
-	//fLastBytesSent, the number of bytes sent when we last did an average.
+	// also compute average bandwidth, a much more smooth value. This is done with
+	// the fLastBandwidthAvg, a timestamp of the last time we did an average, and
+	// fLastBytesSent, the number of bytes sent when we last did an average.
 	if ((fLastBandwidthAvg != 0) && (curTime > (fLastBandwidthAvg +
 		(theServer->GetPrefs()->GetAvgBandwidthUpdateTimeInSecs() * 1000))))
 	{
@@ -466,8 +470,10 @@ SInt64 RTPStatsUpdaterTask::Run()
 		fLastBandwidthAvg = curTime;
 		fLastBytesSent = theServer->fTotalRTPBytes;
 
-		//if the bandwidth is above the bandwidth setting, disconnect 1 user by sending them
-		//a BYE RTCP packet.
+		// if the bandwidth is above the bandwidth setting, disconnect 1 user by sending them
+		// a BYE RTCP packet.
+        // 如果平均带宽大于配置中的最大带宽,则做出处理
+        // GetMaxKBitsBandwidth对应于配置文件中的maximum_bandwidth,缺省为 102400 K/s.
 		SInt32 maxKBits = theServer->GetPrefs()->GetMaxKBitsBandwidth();
 		if ((maxKBits > -1) && (theServer->fAvgRTPBandwidthInBits > ((UInt32)maxKBits * 1024)))
 		{
@@ -487,6 +493,7 @@ SInt64 RTPStatsUpdaterTask::Run()
 	}
 
 	(void)this->GetEvents();//we must clear the event mask!
+    // 对应于配置文件中的total_bytes_update,缺省为 1s。
 	return theServer->GetPrefs()->GetTotalBytesUpdateTimeInSecs() * 1000;
 }
 

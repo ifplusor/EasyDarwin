@@ -52,6 +52,9 @@ SInt64 RTCPTask::Run()
     if ((events & Task::kReadEvent) || (events & Task::kIdleEvent)) {
         //Must be done atomically wrt the socket pool.
 
+        // 遍历SocketPool中的socket对中的每一个socket,如果这个socket有UDPDemuxer(在
+        // RTPSocketPool::ConstructUDPSocketPair函数里,用来接收RTCP数据的Socket B就带有
+        // Demuxer),则将端口中接收到的数据发给UDPDemuxer对应的RTPStream,并调用RTPStream的ProcessIncomingRTCPPacket函数。
         OSMutexLocker locker(theServer->GetSocketPool()->GetMutex());
         for (OSQueueIter iter(theServer->GetSocketPool()->GetSocketQueue());
              !iter.IsDone(); iter.Next()) {
@@ -85,6 +88,8 @@ SInt64 RTCPTask::Run()
 
                         //if this socket has a demuxer, find the target RTPStream
                         if (theDemuxer != NULL) {
+                            // 在RTPStream的Setup函数里,曾经调用进行注册:
+                            // fSockets->GetSocketB()->GetDemuxer()->RegisterTask(fRemoteAddr, fRemoteRTCPPort, this);
                             RTPStream *theStream = (RTPStream *) theDemuxer->GetTask(theRemoteAddr, theRemotePort);
                             if (theStream != NULL)
                                 theStream->ProcessIncomingRTCPPacket(&thePacket);

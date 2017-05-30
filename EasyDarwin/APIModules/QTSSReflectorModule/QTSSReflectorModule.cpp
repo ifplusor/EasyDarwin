@@ -737,8 +737,8 @@ QTSS_Error ProcessRTSPRequest(QTSS_StandardRTSP_Params *inParams)
     QTSS_RTSPMethod *theMethod = NULL;
     //qtss_printf("QTSSReflectorModule:ProcessRTSPRequest inClientSession=%"   _U32BITARG_   "\n", (UInt32) inParams->inClientSession);
     UInt32 theLen = 0;
-    if ((QTSS_GetValuePtr(inParams->inRTSPRequest, qtssRTSPReqMethod, 0,
-                          (void **) &theMethod, &theLen) != QTSS_NoErr) || (theLen != sizeof(QTSS_RTSPMethod))) {
+    if ((QTSS_GetValuePtr(inParams->inRTSPRequest, qtssRTSPReqMethod, 0, (void **) &theMethod, &theLen)
+         != QTSS_NoErr) || (theLen != sizeof(QTSS_RTSPMethod))) {
         Assert(0);
         return QTSS_RequestFailed;
     }
@@ -778,10 +778,11 @@ QTSS_Error ProcessRTSPRequest(QTSS_StandardRTSP_Params *inParams)
     return QTSS_NoErr;
 }
 
-ReflectorSession *
-DoSessionSetup(QTSS_StandardRTSP_Params *inParams, QTSS_AttributeID inPathType, bool isPush, bool *foundSessionPtr,
-               char **resultFilePath)
+ReflectorSession *DoSessionSetup(QTSS_StandardRTSP_Params *inParams, QTSS_AttributeID inPathType, bool isPush,
+                                 bool *foundSessionPtr, char **resultFilePath)
 {
+    // 调用FindOrCreateSession来对哈希表sSessionMap进行查询。
+
     char *theFileNameStr = NULL;
     QTSS_Error theErr = QTSS_GetValueAsString(inParams->inRTSPRequest, qtssRTSPReqFileName, 0, &theFileNameStr);
     Assert(theErr == QTSS_NoErr);
@@ -802,15 +803,14 @@ DoSessionSetup(QTSS_StandardRTSP_Params *inParams, QTSS_AttributeID inPathType, 
     UInt32 theChannelNum = 1;
     const char *chnNum = parList.DoFindCGIValueForParam(EASY_TAG_CHANNEL);
     if (chnNum) {
-        theChannelNum = stoi(chnNum);
+        theChannelNum = (UInt32) stoi(chnNum);
     }
 
     StrPtrLen theFullPath(theFileNameStr);
 
     if (theFullPath.Len > sMOVSuffix.Len) {
         StrPtrLen endOfPath2(&theFullPath.Ptr[theFullPath.Len - sMOVSuffix.Len], sMOVSuffix.Len);
-        if (endOfPath2.Equal(sMOVSuffix)) // it is a .mov so it is not meant for us
-        {
+        if (endOfPath2.Equal(sMOVSuffix)) {  // it is a .mov so it is not meant for us
             return NULL;
         }
     }
@@ -818,9 +818,8 @@ DoSessionSetup(QTSS_StandardRTSP_Params *inParams, QTSS_AttributeID inPathType, 
     if (sAllowNonSDPURLs && !isPush) {
         // Check and see if the full path to this file matches an existing ReflectorSession
         StrPtrLen thePathPtr;
-        OSCharArrayDeleter sdpPath(QTSSModuleUtils::GetFullPath(inParams->inRTSPRequest,
-                                                                inPathType,
-                                                                &thePathPtr.Len, &sSDPSuffix));
+        OSCharArrayDeleter sdpPath(
+                QTSSModuleUtils::GetFullPath(inParams->inRTSPRequest, inPathType, &thePathPtr.Len, &sSDPSuffix));
 
         thePathPtr.Ptr = sdpPath.GetObject();
 
@@ -853,6 +852,7 @@ DoSessionSetup(QTSS_StandardRTSP_Params *inParams, QTSS_AttributeID inPathType, 
             StrPtrLen endOfPath2(&theFullPath.Ptr[theFullPath.Len - sSDPSuffix.Len], sSDPSuffix.Len);
             if (endOfPath2.Equal(sSDPSuffix)) {
                 if (resultFilePath != NULL)
+                    // TODO(james): no channel?
                     *resultFilePath = theFullPath.GetAsCString();
                 return FindOrCreateSession(&theFullPath, inParams, theChannelNum, NULL, isPush, foundSessionPtr);
             }
@@ -934,6 +934,7 @@ void DoAnnounceAddRequiredSDPLines(QTSS_StandardRTSP_Params *inParams, Resizeabl
 
 QTSS_Error DoAnnounce(QTSS_StandardRTSP_Params *inParams)
 {
+    // 判断sAnnounceEnabled是否开启，由 enable_broadcast_announce 配置项确定，默认为true
     if (!sAnnounceEnabled)
         return QTSSModuleUtils::SendErrorResponse(inParams->inRTSPRequest, qtssPreconditionFailed,
                                                   sAnnounceDisabledNameErr);
@@ -949,6 +950,7 @@ QTSS_Error DoAnnounce(QTSS_StandardRTSP_Params *inParams)
     //qtss_printf("QTSSReflectorModule:DoAnnounce\n");
     //
     // Get the full path to this file
+    // 通过键值 qtssRTSPReqFileName 获取完整的转发路径
     char *theFileNameStr = NULL;
     (void) QTSS_GetValueAsString(inParams->inRTSPRequest, qtssRTSPReqFileName, 0, &theFileNameStr);
     QTSSCharArrayDeleter theFileNameStrDeleter(theFileNameStr);
@@ -974,6 +976,7 @@ QTSS_Error DoAnnounce(QTSS_StandardRTSP_Params *inParams)
     sprintf(theStreamName, "%s%s%d", theFileNameStr, EASY_KEY_SPLITER, theChannelNum);
 
     // Check for a .kill at the end
+    // 验证上面路径的结尾是否为.kill，如果是设置killBroadcast为true
     bool pathOK = false;
     bool killBroadcast = false;
     if (sAnnouncedKill && theFullPath.Len > sSDPKillSuffix.Len) {
@@ -985,6 +988,7 @@ QTSS_Error DoAnnounce(QTSS_StandardRTSP_Params *inParams)
     }
 
     // Check for a .sdp at the end
+    // 验证上面路径的结尾是否为.sdp
     if (!pathOK) {
         if (theFullPath.Len <= sSDPSuffix.Len) {
             StrPtrLen endOfPath(theFullPath.Ptr + (theFullPath.Len - sSDPSuffix.Len), sSDPSuffix.Len);
@@ -997,6 +1001,8 @@ QTSS_Error DoAnnounce(QTSS_StandardRTSP_Params *inParams)
     // Ok, this is an sdp file. Retreive the entire contents of the SDP.
     // This has to be done asynchronously (in case the SDP stuff is fragmented across
     // multiple packets. So, we have to have a simple state machine.
+
+    // 获取SDP字符串的长度,并检验sdp字符串是否超长，默认 4*1024
 
     //
     // We need to know the content length to manage memory
@@ -1015,6 +1021,8 @@ QTSS_Error DoAnnounce(QTSS_StandardRTSP_Params *inParams)
     if ((sMaxAnnouncedSDPLengthInKbytes != 0) && (*theContentLenP > (sMaxAnnouncedSDPLengthInKbytes * 1024)))
         return QTSSModuleUtils::SendErrorResponseWithMessage(inParams->inRTSPRequest, qtssPreconditionFailed,
                                                              &sSDPTooLongMessage);
+
+    // 检测sRequestBodyAttr、sBufferOffsetAttr这两个KEY值是否存在hash表中。如果没有就构造键值对增加到hash表
 
     //
     // Check for the existence of 2 attributes in the request: a pointer to our buffer for
@@ -1047,6 +1055,8 @@ QTSS_Error DoAnnounce(QTSS_StandardRTSP_Params *inParams)
 
     theLen = sizeof(theBufferOffset);
     theErr = QTSS_GetValue(inParams->inRTSPRequest, sBufferOffsetAttr, 0, &theBufferOffset, &theLen);
+
+    // 通过QTSS_Read从RTSP请求消息inParams->inRTSPRequest中解析出SDP信息
 
     //
     // We have our buffer and offset. Read the data.
@@ -1091,6 +1101,9 @@ QTSS_Error DoAnnounce(QTSS_StandardRTSP_Params *inParams)
                                                                  &sKILLNotValidMessage);
     }
 
+    // 通过IsSDPBufferValid()方法来校验SDP是否合法，通过InfoPortsOK()判断Announce请求的端口是否合法，
+    // 其中端口范围由sMinimumStaticSDPPort、sMaximumStaticSDPPort决定，默认分别为20000、65535
+
     // ------------  Clean up missing required SDP lines
 
     ResizeableStringFormatter editedSDP(NULL, 0);
@@ -1119,6 +1132,8 @@ QTSS_Error DoAnnounce(QTSS_StandardRTSP_Params *inParams)
 
     SDPLineSorter sortedSDP(&checkedSDPContainer);
 
+    // 分别将SDP字符串中的会话相关字段、媒体相关字段写入sdp文件中.
+
     // ------------ Write the SDP
 
     char *sessionHeaders = sortedSDP.GetSessionHeaders()->GetAsCString();
@@ -1132,18 +1147,18 @@ QTSS_Error DoAnnounce(QTSS_StandardRTSP_Params *inParams)
 
 #if 0
     // write the file !! need error reporting
- FILE* theSDPFile = ::fopen(theFullPath.Ptr, "wb");//open
- if (theSDPFile != NULL)
- {
-     qtss_fprintf(theSDPFile, "%s", sessionHeaders);
-     qtss_fprintf(theSDPFile, "%s", mediaHeaders);
-     ::fflush(theSDPFile);
-     ::fclose(theSDPFile);
- }
- else
- {
-     return QTSSModuleUtils::SendErrorResponse(inParams->inRTSPRequest, qtssClientForbidden, 0);
- }
+    FILE* theSDPFile = ::fopen(theFullPath.Ptr, "wb");//open
+    if (theSDPFile != NULL)
+    {
+        qtss_fprintf(theSDPFile, "%s", sessionHeaders);
+        qtss_fprintf(theSDPFile, "%s", mediaHeaders);
+        ::fflush(theSDPFile);
+        ::fclose(theSDPFile);
+    }
+    else
+    {
+        return QTSSModuleUtils::SendErrorResponse(inParams->inRTSPRequest, qtssClientForbidden, 0);
+    }
 #endif
     char sdpContext[1024] = {0};
     sprintf(sdpContext, "%s%s", sessionHeaders, mediaHeaders);
@@ -1155,9 +1170,8 @@ QTSS_Error DoAnnounce(QTSS_StandardRTSP_Params *inParams)
     return QTSS_SendStandardRTSPResponse(inParams->inRTSPRequest, inParams->inClientSession, 0);
 }
 
-void
-DoDescribeAddRequiredSDPLines(QTSS_StandardRTSP_Params *inParams, ReflectorSession *theSession, QTSS_TimeVal modDate,
-                              ResizeableStringFormatter *editedSDP, StrPtrLen *theSDPPtr)
+void DoDescribeAddRequiredSDPLines(QTSS_StandardRTSP_Params *inParams, ReflectorSession *theSession,
+                                   QTSS_TimeVal modDate, ResizeableStringFormatter *editedSDP, StrPtrLen *theSDPPtr)
 {
     SDPContainer checkedSDPContainer;
     checkedSDPContainer.SetSDPBuffer(theSDPPtr);
@@ -1206,6 +1220,7 @@ DoDescribeAddRequiredSDPLines(QTSS_StandardRTSP_Params *inParams, ReflectorSessi
 
 QTSS_Error DoDescribe(QTSS_StandardRTSP_Params *inParams)
 {
+    // 1. 根据路径获取或者创建ReflectorSession，并获取对应请求的sdp文件绝对路径；
     UInt32 theRefCount = 0;
     char *theFileName = NULL;
     ReflectorSession *theSession = DoSessionSetup(inParams, qtssRTSPReqFileName, false, NULL, &theFileName);
@@ -1263,6 +1278,7 @@ QTSS_Error DoDescribe(QTSS_StandardRTSP_Params *inParams)
     //	}
     //	//redis
 
+    // 2. 如果已经有一个输出会话附属到这个客户端会话，那么就删除之；
     RTPSessionOutput **theOutput = NULL;
     UInt32 theLen = 0;
     QTSS_Error theErr = QTSS_GetValuePtr(inParams->inClientSession, sOutputAttr, 0, (void **) &theOutput, &theLen);
@@ -1277,18 +1293,19 @@ QTSS_Error DoDescribe(QTSS_StandardRTSP_Params *inParams)
     }
     // send the DESCRIBE response
 
-    //above function has signalled that this request belongs to us, so let's respond
+    // above function has signalled that this request belongs to us, so let's respond
     iovec theDescribeVec[3] = {{0}};
 
     Assert(theSession->GetLocalSDP()->Ptr != NULL);
 
-
+    // 3. 读取请求对应的sdp文件，将文件内容解析到StrPtrLen theFileData中；
     StrPtrLen theFileData;
     QTSS_TimeVal outModDate = 0;
     QTSS_TimeVal inModDate = -1;
     (void) QTSSModuleUtils::ReadEntireFile(theFileName, &theFileData, inModDate, &outModDate);
     OSCharArrayDeleter fileDataDeleter(theFileData.Ptr);
 
+    // 4. 将连接信息清空，包括ip地址、端口号，如下面示例，同时增加一个字段a=control:*
     // -------------- process SDP to remove connection info and add track IDs, port info, and default c= line
 
     StrPtrLen theSDPData;
@@ -1302,13 +1319,14 @@ QTSS_Error DoDescribe(QTSS_StandardRTSP_Params *inParams)
         theSDPData.Len = theSession->GetLocalSDP()->Len;
     }
 
-
+    // 5. 检测sdp是否包含v、s、t、o这些字段，如果没有就构造补充进去;
     // ------------  Clean up missing required SDP lines
 
     ResizeableStringFormatter editedSDP(NULL, 0);
     DoDescribeAddRequiredSDPLines(inParams, theSession, outModDate, &editedSDP, &theSDPData);
     StrPtrLen editedSDPSPL(editedSDP.GetBufPtr(), editedSDP.GetBytesWritten());
 
+    // 6. SetSDPBuffer会调用SDP的解析方法paser()，在该方法内对SDP解析的同时，分析出该SDP是否合法，赋予属性fValid；
     // ------------ Check the headers
 
     SDPContainer checkedSDPContainer;
@@ -1320,7 +1338,6 @@ QTSS_Error DoDescribe(QTSS_StandardRTSP_Params *inParams)
         return QTSSModuleUtils::SendErrorResponseWithMessage(inParams->inRTSPRequest, qtssUnsupportedMediaType,
                                                              &sSDPNotValidMessage);
     }
-
 
     // ------------ Put SDP header lines in correct order
     Float32 adjustMediaBandwidthPercent = 1.0;
@@ -1338,6 +1355,7 @@ QTSS_Error DoDescribe(QTSS_StandardRTSP_Params *inParams)
     SDPLineSorter sortedSDP(&checkedSDPContainer, adjustMediaBandwidthPercent, insertMediaLines);
     delete insertMediaLines;
 
+    // 7. 将sdp的会话信息、媒体信息附在RTSP消息中响应给客户端.
     // ------------ Write the SDP
 
     UInt32 sessLen = sortedSDP.GetSessionHeaders()->Len;
@@ -1405,10 +1423,18 @@ bool InfoPortsOK(QTSS_StandardRTSP_Params *inParams, SDPSourceInfo *theInfo, Str
     return isOK;
 }
 
-ReflectorSession *
-FindOrCreateSession(StrPtrLen *inName, QTSS_StandardRTSP_Params *inParams, UInt32 inChannel, StrPtrLen *inData,
-                    bool isPush, bool *foundSessionPtr)
+ReflectorSession *FindOrCreateSession(StrPtrLen *inName, QTSS_StandardRTSP_Params *inParams, UInt32 inChannel,
+                                      StrPtrLen *inData, bool isPush, bool *foundSessionPtr)
 {
+    // 注意:sSessionMap是一个静态的全局变量,这里Resolve的参数是sdp文件的路径。
+    // 也就是说,在同时开启多个窗口播放同一个sdp文件时,都是使用同一个ReflectorSession对象,
+    // FindOrCreateSession也不会调用SetupReflectorSession函数,即ReflectorStream、
+    // ReflectorSocket等对象也不会被再次创建。从逻辑上理解也确实如此,因为只需要一套对象和
+    // Mp4live这类系统打交道。
+    // 但是在这种情况下,会重新创建RTSPSession、RTPSession对象。这样在
+    // QTSSReflectorModule::DoSetup函数里,会再次创建RTPSessionOutput对象,并添加到
+    // ReflectorStream的fOutputArray数组里。同时也会调用QTSS_AddRTPStream函数。
+
     OSMutexLocker locker(sSessionMap->GetMutex());
 
     char theStreamName[QTSS_MAX_NAME_LENGTH] = {0};
@@ -1420,6 +1446,8 @@ FindOrCreateSession(StrPtrLen *inName, QTSS_StandardRTSP_Params *inParams, UInt3
     ReflectorSession *theSession = NULL;
 
     if (theSessionRef == NULL) {
+        // a) 没有根据inPath路径在哈希表sSessionMap中找到对应的ReflectorSession，那么就new一个.
+
         if (!isPush) {
             return NULL;
         }
@@ -1477,6 +1505,7 @@ FindOrCreateSession(StrPtrLen *inName, QTSS_StandardRTSP_Params *inParams, UInt3
 
         // SetupReflectorSession stores theInfo in theSession so DONT delete the Info if we fail here, leave it alone.
         // deleting the session will delete the info.
+        // 最后调用SetupReflectorSession()方法
         QTSS_Error theErr = theSession->SetupReflectorSession(theInfo, inParams, theSetupFlag, sOneSSRCPerStream,
                                                               sTimeoutSSRCSecs);
         if (theErr != QTSS_NoErr) {
@@ -1499,6 +1528,8 @@ FindOrCreateSession(StrPtrLen *inName, QTSS_StandardRTSP_Params *inParams, UInt3
             Assert(debug == theSession->GetRef());
         }
     } else {
+        // b) 如果找到了就直接获取theSession = (ReflectorSession*)theSessionRef->GetObject();
+
 #ifdef REFLECTORSESSION_DEBUG
         qtss_printf("QTSSReflectorModule.cpp:FindOrCreateSession Session =%p refcount=%"   _U32BITARG_   "\n",
                     theSessionRef, theSessionRef->GetRefCount());
@@ -1541,6 +1572,7 @@ FindOrCreateSession(StrPtrLen *inName, QTSS_StandardRTSP_Params *inParams, UInt3
             theSession = (ReflectorSession *) theSessionRef->GetObject();
             if (isPush && theSession && !(theSession->IsSetup())) {
                 UInt32 theSetupFlag = ReflectorSession::kMarkSetup | ReflectorSession::kIsPushSession;
+                // 最后调用SetupReflectorSession()方法
                 QTSS_Error theErr = theSession->SetupReflectorSession(NULL, inParams, theSetupFlag);
                 if (theErr != QTSS_NoErr) {
                     theSession = NULL;
@@ -1587,8 +1619,8 @@ void DeleteReflectorPushSession(QTSS_StandardRTSP_Params *inParams, ReflectorSes
     }
 }
 
-QTSS_Error
-AddRTPStream(ReflectorSession *theSession, QTSS_StandardRTSP_Params *inParams, QTSS_RTPStreamObject *newStreamPtr)
+QTSS_Error AddRTPStream(ReflectorSession *theSession, QTSS_StandardRTSP_Params *inParams,
+                        QTSS_RTPStreamObject *newStreamPtr)
 {
     // Ok, this is completely crazy but I can't think of a better way to do this that's
     // safe so we'll do it this way for now. Because the ReflectorStreams use this session's
@@ -1618,33 +1650,47 @@ QTSS_Error DoSetup(QTSS_StandardRTSP_Params *inParams)
 {
     ReflectorSession *theSession = NULL;
 
+    // 1. 根据关键字qtssRTSPReqTransportMode判断是否为推模式，具体isPush值由Setup请求中的mode值有关，
+    // mode="receive" || mode="record"表示isPush为true。对应的解析函数为：
+    //     void RTSPRequest::ParseModeSubHeader(StrPtrLen* inModeSubHeader)
     UInt32 theLen = 0;
     UInt32 *transportModePtr = NULL;
     QTSS_Error theErr = QTSS_GetValuePtr(inParams->inRTSPRequest, qtssRTSPReqTransportMode, 0,
                                          (void **) &transportModePtr, &theLen);
-    bool isPush = (transportModePtr != NULL && *transportModePtr == qtssRTPTransportModeRecord) ? true : false;
+    bool isPush = transportModePtr != NULL && *transportModePtr == qtssRTPTransportModeRecord;
     bool foundSession = false;
 
+    // 2. 查询是否已经建立RTPSessionOutput。
     RTPSessionOutput **theOutput = NULL;
     theErr = QTSS_GetValuePtr(inParams->inClientSession, sOutputAttr, 0, (void **) &theOutput, &theLen);
+    // 注意对于一个新的播放链接来说,RTSPSession、RTPSession都是新创建的对象,所以需要重新
+    // 创建RTPSessionOutput对象
     if (theLen != sizeof(RTPSessionOutput *)) {
         //theLen = sizeof(theSession);
         //theErr = QTSS_GetValue(inParams->inClientSession, sSessionAttr, 0, &theSession, &theLen);
 
         if (theErr != QTSS_NoErr && !isPush) {
+            // 1.1) 如果没有，且是从UI发来的标准RTSP客户端请求
+
             theSession = DoSessionSetup(inParams, qtssRTSPReqFileName);
             if (theSession == NULL)
                 return QTSS_RequestFailed;
 
+            // 增加客户端输出管道（多路转发）;
             RTPSessionOutput *theNewOutput = new RTPSessionOutput(inParams->inClientSession, theSession, sServerPrefs,
                                                                   sStreamCookieAttr);
             theSession->AddOutput(theNewOutput, true);
+            // 将新建的RTPSessionOutput存储起来，key = sOutputAttr;
             (void) QTSS_SetValue(inParams->inClientSession, sOutputAttr, 0, &theNewOutput, sizeof(theNewOutput));
         } else {
+            // 1.2) 如果isPush = true,代表为Announce推流中的SETUP消息
+
             UInt32 theLenTemp = sizeof(theSession);
             QTSS_Error theErr = QTSS_GetValue(inParams->inClientSession, sClientBroadcastSessionAttr, 0, &theSession,
                                               &theLenTemp);
             if (theSession == NULL) {
+                // 根据前面Announce中存储于qtssRTSPReqLocalPath的路径读取sdp信息,
+                // 调用DoSessionSetup创建或引用已存在的ReflectorSession转发会话
                 theSession = DoSessionSetup(inParams, qtssRTSPReqFileName, isPush, &foundSession);
                 if (theSession == NULL)
                     return QTSS_RequestFailed;
@@ -1661,13 +1707,16 @@ QTSS_Error DoSetup(QTSS_StandardRTSP_Params *inParams)
                                  &sBroadcasterSessionTimeoutMilliSecs, sizeof(sBroadcasterSessionTimeoutMilliSecs));
         }
     } else {
+        // 2) 如果已经存在输出会话，即直接调用。
+
         theSession = (*theOutput)->GetReflectorSession();
         if (theSession == NULL)
             return QTSS_RequestFailed;
     }
 
-    //unless there is a digit at the end of this path (representing trackID), don't
-    //even bother with the request
+    // 3. 解析track ID，后面会根据这个track id来获取流信息
+    // unless there is a digit at the end of this path (representing trackID), don't
+    // even bother with the request
     char *theDigitStr = NULL;
     (void) QTSS_GetValueAsString(inParams->inRTSPRequest, qtssRTSPReqFileDigit, 0, &theDigitStr);
     QTSSCharArrayDeleter theDigitStrDeleter(theDigitStr);
@@ -1684,6 +1733,7 @@ QTSS_Error DoSetup(QTSS_StandardRTSP_Params *inParams)
         //qtss_printf("QTSSReflectorModule.cpp:DoSetup is push setup\n");
 
         // Get info about this trackID
+        // 音视频流有不同的trackID,不同的PayloadName、PayloadType
         SourceInfo::StreamInfo *theStreamInfo = theSession->GetSourceInfo()->GetStreamInfoByTrackID(theTrackID);
         // If theStreamInfo is NULL, we don't have a legit track, so return an error
         if (theStreamInfo == NULL) {
@@ -1719,12 +1769,15 @@ QTSS_Error DoSetup(QTSS_StandardRTSP_Params *inParams)
 
         (void) QTSS_SendStandardRTSPResponse(inParams->inRTSPRequest, newStream, 0);
 
+        // 标识流转发的建立
         theStreamInfo->fSetupToReceive = true;
         // This is an incoming data session. Set the Reflector Session in the ClientSession
+        // 设置转发会话的RTPSession字典的sClientBroadcastSessionAttr字段
         theErr = QTSS_SetValue(inParams->inClientSession, sClientBroadcastSessionAttr, 0, &theSession,
                                sizeof(theSession));
         Assert(theErr == QTSS_NoErr);
 
+        // 设置ReflectorSession的fBroadcasterSession属性为inParams->inClientSession
         if (theSession != NULL)
             theSession->AddBroadcasterClientSession(inParams);
 
@@ -1880,6 +1933,14 @@ bool HaveStreamBuffers(QTSS_StandardRTSP_Params *inParams, ReflectorSession *inS
 
 QTSS_Error DoPlay(QTSS_StandardRTSP_Params *inParams, ReflectorSession *inSession)
 {
+    // 实际上是调用RTPSession::Play函数,在该函数里会执行“this->Signal(Task::kStartEvent)”
+    // 从而导致RTPSession::Run函数运行。
+    // 在RTPSession::Run函数里,调用fModule->CallDispatch(QTSS_RTPSendPackets_Role, &theParams)。
+    // 在我们分析的播放sdp文件这个情景里,fModule在RTSPSession::Run函数里被
+    // SetPacketSendingModule函数设置成为QTSSReflectorModule,而该Module并不支持
+    // QTSS_RTPSendPackets_Role,所以RTPSession::Run返回 0,从而RTPSession::Run函数不会被
+    // TaskThread再次调度。
+
     QTSS_Error theErr = QTSS_NoErr;
     UInt32 flags = 0;
     UInt32 theLen = 0;
@@ -1911,8 +1972,7 @@ QTSS_Error DoPlay(QTSS_StandardRTSP_Params *inParams, ReflectorSession *inSessio
         // this code needs to be cleaned up
         // Check and see if the full path to this file matches an existing ReflectorSession
         StrPtrLen thePathPtr;
-        OSCharArrayDeleter sdpPath(QTSSModuleUtils::GetFullPath(inParams->inRTSPRequest,
-                                                                qtssRTSPReqFilePath,
+        OSCharArrayDeleter sdpPath(QTSSModuleUtils::GetFullPath(inParams->inRTSPRequest, qtssRTSPReqFilePath,
                                                                 &thePathPtr.Len, &sSDPSuffix));
 
         thePathPtr.Ptr = sdpPath.GetObject();
@@ -1946,8 +2006,8 @@ QTSS_Error DoPlay(QTSS_StandardRTSP_Params *inParams, ReflectorSession *inSessio
 
         KeepSession(inParams->inRTSPRequest, true);
         //qtss_printf("QTSSReflectorModule.cpp:DoPlay (PUSH) inRTSPSession=%"   _U32BITARG_   " inClientSession=%"   _U32BITARG_   "\n",(UInt32)inParams->inRTSPSession,(UInt32)inParams->inClientSession);
-    } else    // 客户端
-    {
+    } else {  // 客户端
+
         RTPSessionOutput **theOutput = NULL;
         theLen = 0;
         theErr = QTSS_GetValuePtr(inParams->inClientSession, sOutputAttr, 0, (void **) &theOutput, &theLen);

@@ -38,13 +38,13 @@
 #include "IdleTask.h"
 #include "OS.h"
 
- //IDLETASKTHREAD IMPLEMENTATION:
+// IDLETASKTHREAD IMPLEMENTATION:
 std::shared_ptr<IdleTaskThread>     IdleTask::sIdleThread = nullptr;
 
 void IdleTaskThread::SetIdleTimer(IdleTask* activeObj, SInt64 msec)
 {
-	//note: OSHeap doesn't support a random remove, so this function
-	//won't change the timeout value if there is already one set
+	// note: OSHeap doesn't support a random remove, so this function
+	// won't change the timeout value if there is already one set
 	if (activeObj->fIdleElem.IsMemberOfAnyHeap())
 		return;
 	activeObj->fIdleElem.SetValue(OS::Milliseconds() + msec);
@@ -63,9 +63,10 @@ void IdleTaskThread::CancelTimeout(IdleTask* idleObj)
 	fIdleHeap.Remove(&idleObj->fIdleElem);
 }
 
-void
-IdleTaskThread::Entry()
+void IdleTaskThread::Entry()
 {
+    // 空闲任务线程启动后,该函数运行。主要由一个大循环构成:
+
 	OSMutexLocker locker(&fHeapMutex);
 
 	while (true)
@@ -99,6 +100,8 @@ IdleTaskThread::Entry()
 
 void IdleTask::Initialize()
 {
+	// 该函数在 StartServer 里会被调用。
+
 	if (!sIdleThread)
 	{
 		//sIdleThread = new IdleTaskThread();

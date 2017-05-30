@@ -583,8 +583,9 @@ void QTSSDictionary::SetNumValues(QTSS_AttributeID inAttrID, UInt32 inNumValues)
     QTSS_AttrDataType dataType = theMap->GetAttrType(theMapIndex);
     if (theAttrs[theMapIndex].fIsDynamicDictionary || (dataType == qtssAttrDataTypeCharArray)) {
         // getting rid of dictionaries or strings is tricky, so it's easier to call remove value
-        for (UInt32 removeCount = numAttributes - inNumValues; removeCount >
-                                                               0; removeCount--) {    // the delete index passed to RemoveValue is always the last in the array.
+        for (UInt32 removeCount = numAttributes - inNumValues;
+             removeCount >
+             0; removeCount--) {  // the delete index passed to RemoveValue is always the last in the array.
             this->RemoveValue(inAttrID, theAttrs[theMapIndex].fNumAttributes - 1, kDontObeyReadOnly);
         }
     } else {
@@ -867,8 +868,7 @@ QTSS_Error QTSSDictionaryMap::AddAttribute(const char *inAttrName,
         return QTSS_BadArgument;
 
     for (UInt32 count = 0; count < fNextAvailableID; count++) {
-        if (::strcmp(&fAttrArray[count]->fAttrInfo.fAttrName[0], inAttrName) ==
-            0) {   // found the name in the dictionary
+        if (::strcmp(&fAttrArray[count]->fAttrInfo.fAttrName[0], inAttrName) == 0) { // found the name in the dictionary
             if (fAttrArray[count]->fAttrInfo.fAttrPermission &
                 qtssPrivateAttrModeRemoved) { // it is a previously removed attribute
                 if (fAttrArray[count]->fAttrInfo.fAttrDataType == inDataType) { //same type so reuse the attribute

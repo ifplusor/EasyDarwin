@@ -211,14 +211,13 @@ OS_Error Socket::Bind(UInt32 addr, UInt16 port, bool test)
 #endif
 		err = ::bind(fFileDesc, (sockaddr *)&fLocalAddr, sizeof(fLocalAddr));
 
-
-	if (err == -1)
-	{
+	if (err == -1) {
 		fLocalAddr.sin_port = 0;
 		fLocalAddr.sin_addr.s_addr = 0;
 		return (OS_Error)OSThread::GetErrno();
 	}
-	else ::getsockname(fFileDesc, (sockaddr *)&fLocalAddr, &len); // get the kernel to fill in unspecified values
+	else
+        ::getsockname(fFileDesc, (sockaddr *)&fLocalAddr, &len); // get the kernel to fill in unspecified values
 	fState |= kBound;
 	return OS_NoErr;
 }

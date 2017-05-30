@@ -79,8 +79,8 @@ private:
 };
 
 class TimeoutTask {
-    //TimeoutTask is not a derived object off of Task, to add flexibility as
-    //to how this object can be utilitized
+    // TimeoutTask is not a derived object off of Task, to add flexibility as
+    // to how this object can be utilitized
 
 public:
 

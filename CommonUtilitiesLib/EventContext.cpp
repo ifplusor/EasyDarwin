@@ -234,7 +234,7 @@ void EventContext::RequestEvent(int theMask)
             } else {
                 bFindValid = true;// ok, it's free
             }
-        } while (0);
+        } while (0);  // TODO(james): !bFindValid
 #endif
 
         fRef.Set(fUniqueIDStr, this);
@@ -254,7 +254,7 @@ void EventContext::RequestEvent(int theMask)
 #if defined(__linux__) && !defined(EASY_DEVICE)
         if (addEpollEvent(&fEventReq, theMask) != 0)
 #else
-            if (select_modwatch(&fEventReq, theMask) != 0)
+        if (select_modwatch(&fEventReq, theMask) != 0)
 #endif
 #endif
             //this should never fail, but if it does, cleanup.

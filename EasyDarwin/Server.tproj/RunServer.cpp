@@ -67,7 +67,8 @@ SInt64 sLastDebugTotalQuality = 0;
 
 QTSS_ServerState StartServer(XMLPrefsParser *inPrefsSource, PrefsSource *inMessagesSource, UInt16 inPortOverride,
                              int statsUpdateInterval, QTSS_ServerState inInitialState, bool inDontFork,
-                             UInt32 debugLevel, UInt32 debugOptions, const char *sAbsolutePath) {
+                             UInt32 debugLevel, UInt32 debugOptions, const char *sAbsolutePath)
+{
     //Mark when we are done starting up. If auto-restart is enabled, we want to make sure
     //to always exit with a status of 0 if we encountered a problem WHILE STARTING UP. This
     //will prevent infinite-auto-restart-loop type problems
@@ -206,7 +207,8 @@ QTSS_ServerState StartServer(XMLPrefsParser *inPrefsSource, PrefsSource *inMessa
     return theServerState;
 }
 
-void WritePid(bool forked) {
+void WritePid(bool forked)
+{
 #ifndef __Win32__
     // WRITE PID TO FILE
     OSCharArrayDeleter thePidFileName(sServer->GetPrefs()->GetPidFilePath());
@@ -224,7 +226,8 @@ void WritePid(bool forked) {
 #endif
 }
 
-void CleanPid(bool force) {
+void CleanPid(bool force)
+{
 #ifndef __Win32__
     if (sHasPID || force) {
         OSCharArrayDeleter thePidFileName(sServer->GetPrefs()->GetPidFilePath());
@@ -233,7 +236,8 @@ void CleanPid(bool force) {
 #endif
 }
 
-void LogStatus(QTSS_ServerState theServerState) {
+void LogStatus(QTSS_ServerState theServerState)
+{
     static QTSS_ServerState lastServerState = 0;
     static char *sPLISTHeader[] =
             {"<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
@@ -368,13 +372,15 @@ void LogStatus(QTSS_ServerState theServerState) {
     lastServerState = theServerState;
 }
 
-void print_status(FILE *file, FILE *console, char *format, char *theStr) {
+void print_status(FILE *file, FILE *console, char *format, char *theStr)
+{
     if (file) qtss_fprintf(file, format, theStr);
     if (console) qtss_fprintf(console, format, theStr);
 
 }
 
-void DebugLevel_1(FILE *statusFile, FILE *stdOut, bool printHeader) {
+void DebugLevel_1(FILE *statusFile, FILE *stdOut, bool printHeader)
+{
     char *thePrefStr = NULL;
     static char numStr[12] = "";
     static char dateStr[25] = "";
@@ -466,7 +472,8 @@ void DebugLevel_1(FILE *statusFile, FILE *stdOut, bool printHeader) {
     print_status(statusFile, stdOut, "%24s\n", dateStr);
 }
 
-FILE *LogDebugEnabled() {
+FILE *LogDebugEnabled()
+{
 
     if (DebugLogOn(sServer)) {
         static StrPtrLen statsFileNameStr("server_debug_status");
@@ -484,12 +491,14 @@ FILE *LogDebugEnabled() {
 }
 
 
-FILE *DisplayDebugEnabled() {
+FILE *DisplayDebugEnabled()
+{
     return (DebugDisplayOn(sServer)) ? stdout : NULL;
 }
 
 
-void DebugStatus(UInt32 debugLevel, bool printHeader) {
+void DebugStatus(UInt32 debugLevel, bool printHeader)
+{
 
     FILE *statusFile = LogDebugEnabled();
     FILE *stdOut = DisplayDebugEnabled();
@@ -501,7 +510,8 @@ void DebugStatus(UInt32 debugLevel, bool printHeader) {
         ::fclose(statusFile);
 }
 
-void FormattedTotalBytesBuffer(char *outBuffer, int outBufferLen, UInt64 totalBytes) {
+void FormattedTotalBytesBuffer(char *outBuffer, int outBufferLen, UInt64 totalBytes)
+{
     Float32 displayBytes = 0.0;
     char sizeStr[] = "B";
     char *format = NULL;
@@ -531,7 +541,8 @@ void FormattedTotalBytesBuffer(char *outBuffer, int outBufferLen, UInt64 totalBy
     qtss_snprintf(outBuffer, outBufferLen - 1, format, displayBytes, sizeStr);
 }
 
-void PrintStatus(bool printHeader) {
+void PrintStatus(bool printHeader)
+{
     char *thePrefStr = NULL;
     UInt32 theLen = 0;
 
@@ -585,16 +596,19 @@ void PrintStatus(bool printHeader) {
 
 }
 
-bool PrintHeader(UInt32 loopCount) {
+bool PrintHeader(UInt32 loopCount)
+{
     return ((loopCount % (sStatusUpdateInterval * 10)) == 0) ? true : false;
 }
 
-bool PrintLine(UInt32 loopCount) {
+bool PrintLine(UInt32 loopCount)
+{
     return ((loopCount % sStatusUpdateInterval) == 0) ? true : false;
 }
 
 
-void RunServer() {
+void RunServer()
+{
     bool restartServer = false;
     UInt32 loopCount = 0;
     UInt32 debugLevel = 0;

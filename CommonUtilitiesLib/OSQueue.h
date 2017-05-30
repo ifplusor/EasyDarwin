@@ -143,6 +143,8 @@ private:
     OSQueueElem *fCurrentElemP;
 };
 
+// 该类用作 TaskThread 的私有成员类,实际上是利用线程的条件变量实现了一个可等待唤醒的队列操
+// 作。下面是一些成员函数的分析:
 class OSQueue_Blocking {
 public:
     OSQueue_Blocking() {}

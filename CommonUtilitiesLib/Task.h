@@ -71,11 +71,11 @@ public:
         kTimeoutEvent = 0x1 << 0x3,
 
         //socket events
-                kReadEvent = 0x1 << 0x4, //All of type "EventFlags"
+        kReadEvent = 0x1 << 0x4, //All of type "EventFlags"
         kWriteEvent = 0x1 << 0x5,
 
         //update event
-                kUpdateEvent = 0x1 << 0x6
+        kUpdateEvent = 0x1 << 0x6
     };
 
     //CONSTRUCTOR / DESTRUCTOR

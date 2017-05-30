@@ -145,6 +145,11 @@ RTPSession::~RTPSession()
 
 QTSS_Error RTPSession::Activate(const StrPtrLen &inSessionID)
 {
+    // 该函数执行了以下操作:
+    // 1. 拷贝到fRTSPSessionIDBuf,
+    // 2. puts the session into the RTPSession Map: theServer->GetRTPSessionMap()->Register(&fRTPMapElem);
+    // 3. 调用IncrementTotalRTPSessions()
+
     //Set the session ID for this session
     Assert(inSessionID.Len <= QTSS_MAX_SESSION_ID_LENGTH);
     ::memcpy(fRTSPSessionIDBuf, inSessionID.Ptr, inSessionID.Len);
@@ -471,6 +476,7 @@ void RTPSession::SendAnnounceResponse(RTSPRequestInterface *inRequest)
 SInt64 RTPSession::Run()
 {
     // 在 RTPSession::Play 函数调用 Signal 后,该函数会被运行
+
 #if DEBUG
     Assert(fActivateCalled);
 #endif

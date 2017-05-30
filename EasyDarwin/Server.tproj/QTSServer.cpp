@@ -388,13 +388,11 @@ bool QTSServer::SetDefaultIPAddr()
     return true;
 }
 
-/*
-*
-*	DESCRIBE:	Add HTTP Port Listening,Total Port Listening=RTSP Port listening + HTTP Port Listening
-*	Author:		Babosa@easydarwin.org
-*	Date:		2015/11/22
-*
-*/
+/**
+ *	DESCRIBE:	Add HTTP Port Listening,Total Port Listening=RTSP Port listening + HTTP Port Listening
+ *	Author:		Babosa@easydarwin.org
+ *	Date:		2015/11/22
+ */
 bool QTSServer::CreateListeners(bool startListeningNow, QTSServerPrefs *inPrefs, UInt16 inPortOverride)
 {
     struct PortTracking {

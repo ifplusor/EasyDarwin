@@ -522,7 +522,8 @@ private:
 class RTPStatsUpdaterTask : public Task {
 public:
 
-    // This class runs periodically to compute current totals & averages
+    // This class runs periodically to compute current totals & averages,
+    // 同时如果发现RTP流量超过限制,会考虑是否发送kKillEvent信号给最近的会话。
     RTPStatsUpdaterTask();
 
     virtual ~RTPStatsUpdaterTask() {}

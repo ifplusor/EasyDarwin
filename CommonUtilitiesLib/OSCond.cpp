@@ -83,7 +83,7 @@ void OSCond::TimedWait(OSMutex* inMutex, SInt32 inTimeoutInMilSecs)
 	struct timezone tz;
 	int sec, usec;
 
-	//These platforms do refcounting manually, and wait will release the mutex,
+	// These platforms do refcounting manually, and wait will release the mutex,
 	// so we need to update the counts here
 
 	inMutex->fHolderCount--;
