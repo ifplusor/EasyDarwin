@@ -815,6 +815,7 @@ ReflectorSession *DoSessionSetup(QTSS_StandardRTSP_Params *inParams, QTSS_Attrib
         }
     }
 
+    // 推模式不允许 non-sdp url
     if (sAllowNonSDPURLs && !isPush) {
         // Check and see if the full path to this file matches an existing ReflectorSession
         StrPtrLen thePathPtr;
