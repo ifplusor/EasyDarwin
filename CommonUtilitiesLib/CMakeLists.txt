@@ -1,5 +1,5 @@
 
-add_definitions(-D_REENTRANT -D__USE_POSIX -D__linux__)
+add_definitions(-D_REENTRANT -D__USE_POSIX)
 add_compile_options(-include ../Include/PlatformHeader.h)
 include_directories(
 		.

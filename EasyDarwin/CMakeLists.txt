@@ -1,7 +1,7 @@
 
 
 add_compile_options(-include ../Include/PlatformHeader.h)
-add_definitions(-DDSS_USE_API_CALLBACKS -D_REENTRANT -D__USE_POSIX -D__linux__)
+add_definitions(-DDSS_USE_API_CALLBACKS -D_REENTRANT -D__USE_POSIX)
 include_directories(../HTTPUtilitiesLib ../CommonUtilitiesLib Server.tproj
         QTFileLib/ RTPMetaInfoLib/ PrefsSourceLib/ APIStubLib/ APICommonCode/
         RTCPUtilitiesLib/ RTSPClientLib/ APIModules/QTSSFileModule/
